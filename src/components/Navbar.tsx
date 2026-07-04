@@ -1,0 +1,154 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home } from 'lucide-react';
+
+const NAV_ITEMS = [
+  { name: 'Tonight', icon: Home, page: 'tonight' },
+  { name: 'Transactions', icon: CalendarDays, page: 'transactions' },
+  { name: 'Insights', icon: Sparkles, page: 'insights' },
+];
+
+interface SidebarProps {
+  onOpenAuth: () => void;
+  currentPage: string;
+  onNavigate: (page: string) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  isDark: boolean;
+  toggleTheme: () => void;
+}
+
+export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme }: SidebarProps) {
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside 
+        initial={{ x: -280 }}
+        animate={{ x: 0 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+        className={`hidden md:flex fixed top-0 left-0 h-screen flex-col justify-between border-r border-white/20 dark:border-white/5 glass bg-white/40 dark:bg-zinc-950/40 backdrop-blur-2xl z-50 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20 p-4' : 'w-64 p-6'}`}
+      >
+        <div>
+          {/* Logo */}
+          <div className={`flex items-center mb-10 ${isCollapsed ? 'justify-center' : 'gap-3 pl-2'}`}>
+            <div className="w-10 h-10 bg-foreground text-background rounded-xl flex items-center justify-center shadow-lg shrink-0">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            {!isCollapsed && (
+              <span className="font-extrabold text-2xl tracking-tighter text-foreground whitespace-nowrap overflow-hidden">
+                SpendSense.
+              </span>
+            )}
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1.5">
+            {!isCollapsed && <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pl-2">Menu</div>}
+            {NAV_ITEMS.map((item) => {
+              const isActive = currentPage === item.page;
+              return (
+                <button
+                  key={item.name}
+                  onClick={() => onNavigate(item.page)}
+                  title={item.name}
+                  className={`w-full flex items-center py-2.5 rounded-xl text-sm font-medium transition-all ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${
+                    isActive 
+                      ? "bg-primary/10 text-primary dark:bg-primary/20" 
+                      : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
+                  {!isCollapsed && item.page === 'insights' && (
+                    <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-gradient-to-r from-violet-500 to-purple-500 text-white px-2 py-0.5 rounded-full">AI</span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Bottom Actions */}
+        <div className={`space-y-4 pt-6 border-t border-border`}>
+          <div className={`flex items-center ${isCollapsed ? 'flex-col gap-3' : 'justify-between px-2'}`}>
+            <button 
+              onClick={onToggleCollapse}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              title="Toggle Sidebar"
+            >
+              {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+            </button>
+            
+            <button 
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            <button 
+              onClick={() => onNavigate('settings')}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${currentPage === 'settings' ? 'bg-primary/10 text-primary dark:bg-primary/20' : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5'}`}
+              title="Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+
+          <button 
+            onClick={onOpenAuth}
+            className={`w-full flex items-center rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group ${isCollapsed ? 'justify-center p-0 mt-4' : 'gap-3 p-2'}`}
+            title="Guest User"
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-200 dark:from-indigo-900 dark:to-purple-900 border border-white/50 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+              <User className="w-5 h-5 text-indigo-700 dark:text-indigo-300" />
+            </div>
+            {!isCollapsed && (
+              <div className="text-left flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">Guest User</p>
+                <p className="text-xs text-muted-foreground truncate">Sign in to sync</p>
+              </div>
+            )}
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* Mobile Bottom Dock */}
+      <motion.nav 
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        className="md:hidden fixed bottom-0 left-0 w-full glass bg-white/80 dark:bg-zinc-900/80 border-t border-white/20 dark:border-white/5 backdrop-blur-xl z-50 pb-safe"
+      >
+        <div className="flex items-center justify-around p-3">
+          {NAV_ITEMS.map((item) => {
+            const isActive = currentPage === item.page;
+            return (
+              <button
+                key={item.name}
+                onClick={() => onNavigate(item.page)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                <item.icon className="w-6 h-6" />
+                <span className="text-[10px] font-medium">{item.name}</span>
+              </button>
+            );
+          })}
+          <button 
+            onClick={() => onNavigate('settings')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+              currentPage === 'settings' ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Settings className="w-6 h-6" />
+            <span className="text-[10px] font-medium">Settings</span>
+          </button>
+        </div>
+      </motion.nav>
+    </>
+  );
+}
