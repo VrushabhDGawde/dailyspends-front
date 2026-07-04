@@ -53,8 +53,8 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </motion.h2>
                 <motion.p layout className="text-muted-foreground text-sm px-4">
                   {isLogin 
-                    ? 'Enter your details to access your SpendSense dashboard.' 
-                    : 'Start tracking your expenses seamlessly today.'}
+                    ? 'Enter your details to access your DailySpends dashboard.' 
+                    : 'Sign up to start tracking your daily expenses.'}
                 </motion.p>
               </motion.div>
 

@@ -39,7 +39,7 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
             </div>
             {!isCollapsed && (
               <span className="font-extrabold text-2xl tracking-tighter text-foreground whitespace-nowrap overflow-hidden">
-                SpendSense.
+                DailySpends.
               </span>
             )}
           </div>
