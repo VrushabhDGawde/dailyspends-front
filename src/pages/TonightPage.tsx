@@ -869,7 +869,7 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="glass rounded-3xl w-full max-w-md p-6 shadow-2xl border border-white/20 dark:border-white/10 relative overflow-hidden"
+              className="glass !bg-white/70 dark:!bg-white/15 rounded-3xl w-full max-w-2xl p-8 shadow-2xl border border-white/40 dark:border-white/20 relative overflow-hidden"
             >
               <button 
                 onClick={() => setPieChartModalDate(null)}
@@ -901,10 +901,10 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                           dataKey="amount"
                           nameKey="name"
                           label={({ name, percent }: any) => {
-                            const shortName = name.length > 10 ? name.slice(0, 10) + '...' : name;
+                            const shortName = name.length > 20 ? name.slice(0, 20) + '...' : name;
                             return `${shortName} ${((percent || 0) * 100).toFixed(0)}%`;
                           }}
-                          labelLine={false}
+                          labelLine={true}
                         >
                           {dayData.categories.map((entry, index) => {
                             const colors = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#64748b'];
