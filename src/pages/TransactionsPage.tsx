@@ -37,7 +37,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Sort & View
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
@@ -276,6 +276,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                       value={fromDate}
                       onChange={setFromDate}
                       placeholder="From Date"
+                      maxDate={new Date()}
                     />
                   </div>
                 </div>
@@ -288,6 +289,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                     value={toDate}
                     onChange={setToDate}
                     placeholder="To Date"
+                    maxDate={new Date()}
                   />
                 </div>
               </div>
