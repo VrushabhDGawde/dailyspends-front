@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUpDown, RefreshCw, ArrowDownRight, ArrowUpRight, Edit3, Check, X, Calendar as CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, ArrowUpDown, RefreshCw, ArrowDownRight, ArrowUpRight, Edit3, Check, X, Calendar as CalendarIcon, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchTransactions, type RawSmsLog } from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { CustomDatePicker } from '../components/CustomDatePicker';
@@ -47,6 +47,10 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
   // Edit State
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ amount: 0, merchant: '', category: '' });
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const loadData = async () => {
     setLoading(true);
@@ -142,6 +146,18 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
 
     return result;
   }, [transactions, searchQuery, categoryFilter, typeFilter, fromDate, toDate, sortBy, sortOrder]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, typeFilter, fromDate, toDate, sortBy, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAndSorted.length / rowsPerPage));
+  
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    return filteredAndSorted.slice(start, start + rowsPerPage);
+  }, [filteredAndSorted, currentPage, rowsPerPage]);
 
   const { totalDebit, totalCredit, chartData } = useMemo(() => {
     let debit = 0;
@@ -442,7 +458,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredAndSorted.length === 0 ? (
+                {paginatedTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-12 text-center text-muted-foreground">
                       <div className="flex flex-col items-center justify-center">
@@ -452,7 +468,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                     </td>
                   </tr>
                 ) : (
-                  filteredAndSorted.map((tx) => {
+                  paginatedTransactions.map((tx) => {
                     const isDebit = tx.transactionType === 'DEBIT';
                     const Icon = isDebit ? ArrowDownRight : ArrowUpRight;
                     const isEditing = editingId === tx.id;
@@ -606,8 +622,77 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
             </AnimatePresence>
           </div>
           
-          <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 text-center text-xs font-bold text-muted-foreground tracking-wider uppercase">
-            Showing {filteredAndSorted.length} transactions
+          <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-3xl">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground font-semibold">
+              <span>Rows per page:</span>
+              <select
+                value={rowsPerPage}
+                onChange={e => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent border border-border/50 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-bold"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const page = i + 1;
+                // Show first, last, and pages around current page
+                if (
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === page ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground'}`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                
+                if (page === currentPage - 2 || page === currentPage + 2) {
+                  return <span key={page} className="text-muted-foreground tracking-widest px-1">...</span>;
+                }
+                
+                return null;
+              })}
+              
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Next Page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest hidden md:block">
+              {filteredAndSorted.length > 0 ? (
+                <>Showing {(currentPage - 1) * rowsPerPage + 1}-{Math.min(currentPage * rowsPerPage, filteredAndSorted.length)} of {filteredAndSorted.length}</>
+              ) : (
+                <>No transactions</>
+              )}
+            </div>
           </div>
         </div>
 
