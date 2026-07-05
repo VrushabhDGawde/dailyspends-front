@@ -862,7 +862,7 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setPieChartModalDate(null)}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass !bg-background/40"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 dark:bg-black/60"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -900,7 +900,10 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                           paddingAngle={5}
                           dataKey="amount"
                           nameKey="name"
-                          label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          label={({ name, percent }: any) => {
+                            const shortName = name.length > 10 ? name.slice(0, 10) + '...' : name;
+                            return `${shortName} ${((percent || 0) * 100).toFixed(0)}%`;
+                          }}
                           labelLine={false}
                         >
                           {dayData.categories.map((entry, index) => {
