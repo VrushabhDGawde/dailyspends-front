@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchTransactions, addTransaction, type RawSmsLog } from '../services/api';
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { 
   RefreshCw, CheckCircle2, Coffee, ShoppingBag, 
   Car, Zap, Home, IndianRupee, TrendingUp, TrendingDown, 
@@ -87,6 +88,7 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
   // --- CALENDAR STATE ---
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [pieChartModalDate, setPieChartModalDate] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -779,6 +781,7 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setSelectedCalendarDate(isSelected ? null : dateStr)}
+                      onDoubleClick={() => data && data.totalSpent > 0 && setPieChartModalDate(dateStr)}
                       className={`aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all ${bgClass} ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background z-10' : ''}`}
                     >
                       <span className={`text-xs font-bold ${textColor}`}>{dayNum}</span>
@@ -849,8 +852,75 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
           </div>
         </div>
-
       </div>
+
+      {/* Pie Chart Modal (Frosted Glass) */}
+      <AnimatePresence>
+        {pieChartModalDate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPieChartModalDate(null)}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 glass !bg-background/40"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="glass rounded-3xl w-full max-w-md p-6 shadow-2xl border border-white/20 dark:border-white/10 relative overflow-hidden"
+            >
+              <button 
+                onClick={() => setPieChartModalDate(null)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+              
+              <h2 className="text-xl font-bold mb-1">Expense Breakdown</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                {new Date(pieChartModalDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})}
+              </p>
+
+              {(() => {
+                const dayData = daySummaries.find(s => s.date === pieChartModalDate);
+                if (!dayData || dayData.categories.length === 0) return <p className="text-center py-10 text-muted-foreground">No expenses for this day.</p>;
+                
+                return (
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={dayData.categories}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={5}
+                          dataKey="amount"
+                          nameKey="name"
+                          label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {dayData.categories.map((entry, index) => {
+                            const colors = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#64748b'];
+                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                          })}
+                        </Pie>
+                        <RechartsTooltip 
+                          formatter={(value: any) => `₹${Number(value || 0).toLocaleString('en-IN')}`}
+                          contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
+                        />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
