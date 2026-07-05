@@ -199,7 +199,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8 w-full overflow-x-hidden">
       <div className="max-w-[1400px] mx-auto space-y-6">
         
         <header className="flex justify-between items-end mb-6">
@@ -226,25 +226,34 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
 
             <div className="flex flex-wrap gap-4 w-full xl:w-auto">
               
-              <div className="flex items-center gap-3 bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                <CalendarIcon className="w-4 h-4 text-primary" />
-                <CustomDatePicker 
-                  value={fromDate}
-                  onChange={setFromDate}
-                  placeholder="From Date"
-                />
-                <span className="text-muted-foreground text-xs font-extrabold mx-1 uppercase tracking-widest">TO</span>
-                <CustomDatePicker 
-                  value={toDate}
-                  onChange={setToDate}
-                  placeholder="To Date"
-                />
+              <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-auto">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <CalendarIcon className="w-4 h-4 text-primary hidden sm:block" />
+                  <div className="flex-1 sm:flex-none">
+                    <CustomDatePicker 
+                      value={fromDate}
+                      onChange={setFromDate}
+                      placeholder="From Date"
+                    />
+                  </div>
+                </div>
+                <span className="text-muted-foreground text-xs font-extrabold mx-1 uppercase tracking-widest hidden sm:block">TO</span>
+                <div className="flex items-center justify-center sm:hidden w-full h-px bg-border my-1 relative">
+                  <span className="absolute bg-background px-2 text-[10px] text-muted-foreground font-bold">TO</span>
+                </div>
+                <div className="w-full sm:w-auto flex-1 sm:flex-none">
+                  <CustomDatePicker 
+                    value={toDate}
+                    onChange={setToDate}
+                    placeholder="To Date"
+                  />
+                </div>
               </div>
 
               <select 
                 value={categoryFilter}
                 onChange={e => setCategoryFilter(e.target.value)}
-                className="bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                className="bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium w-full sm:w-auto"
               >
                 <option value="ALL">All Categories</option>
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -253,7 +262,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
               <select 
                 value={typeFilter}
                 onChange={e => setTypeFilter(e.target.value)}
-                className="bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                className="bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium w-full sm:w-auto"
               >
                 <option value="ALL">All Types</option>
                 <option value="DEBIT">Expense (Debit)</option>

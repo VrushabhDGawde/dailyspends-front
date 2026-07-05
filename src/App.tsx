@@ -52,7 +52,7 @@ function App() {
         />
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         
-        <div className={`flex-1 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} pb-20 md:pb-0 min-h-screen`}>
+        <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} pb-20 md:pb-0 min-h-screen`}>
           {currentPage === 'tonight' && (
             <TonightPage onNavigateToTransactions={(filter) => {
               setTxFilterState(filter);
