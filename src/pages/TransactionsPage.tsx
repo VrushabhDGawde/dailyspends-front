@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowUpDown, RefreshCw, ArrowDownRight, ArrowUpRight, Edit3, Check, X, Calendar as CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { fetchTransactions, type RawSmsLog } from '../services/api';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { CustomDatePicker } from '../components/CustomDatePicker';
+import { PieChart as PieChartIcon, List as ListIcon } from 'lucide-react';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -38,9 +39,10 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   
-  // Sort
+  // Sort & View
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   // Edit State
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -168,6 +170,19 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
     })).reverse(); // Assuming descending sort by default, reversing for chronological chart
 
     return { totalDebit: debit, totalCredit: credit, chartData: chartDataList };
+  }, [filteredAndSorted]);
+
+  const categoryPieData = useMemo(() => {
+    const cats: Record<string, number> = {};
+    filteredAndSorted.forEach(tx => {
+      // If we are looking at ALL, maybe group by category but only sum expenses?
+      // Usually pie chart is best for expenses. Let's sum absolute amounts.
+      if (tx.transactionType === 'DEBIT') {
+        const amt = tx.amount || 0;
+        cats[tx.category] = (cats[tx.category] || 0) + amt;
+      }
+    });
+    return Object.keys(cats).map(name => ({ name, value: cats[name] })).sort((a,b) => b.value - a.value);
   }, [filteredAndSorted]);
 
   const toggleSort = (field: 'date' | 'amount') => {
@@ -374,10 +389,37 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
           </div>
         </motion.div>
 
-        {/* Data Table */}
-        <div className="glass rounded-3xl overflow-hidden border border-white/10">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
+        {/* Data Table / Pie Chart Toggle & View */}
+        <div className="glass rounded-3xl overflow-hidden border border-white/10 flex flex-col">
+          <div className="p-4 border-b border-border/50 flex justify-end">
+            <div className="bg-black/5 dark:bg-white/5 rounded-xl p-1 flex items-center gap-1">
+              <button 
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <ListIcon className="w-4 h-4" /> Table
+              </button>
+              <button 
+                onClick={() => setViewMode('chart')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'chart' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <PieChartIcon className="w-4 h-4" /> Breakdown
+              </button>
+            </div>
+          </div>
+          
+          <div className="relative min-h-[400px]">
+            <AnimatePresence mode="wait">
+              {viewMode === 'table' ? (
+                <motion.div 
+                  key="table"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-x-auto w-full"
+                >
+                  <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-border bg-black/5 dark:bg-white/5 text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="p-5 font-semibold cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors group w-[150px]" onClick={() => toggleSort('date')}>
@@ -512,6 +554,54 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                 )}
               </tbody>
             </table>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="chart"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full h-[500px] flex items-center justify-center p-8"
+                >
+                  {categoryPieData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <PieChartIcon className="w-12 h-12 mb-4 opacity-20" />
+                      <p>No expense data to breakdown.</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryPieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={80}
+                          outerRadius={160}
+                          paddingAngle={5}
+                          dataKey="value"
+                          nameKey="name"
+                          label={({ name, percent }: any) => {
+                            const shortName = name.length > 20 ? name.slice(0, 20) + '...' : name;
+                            return `${shortName} ${((percent || 0) * 100).toFixed(0)}%`;
+                          }}
+                          labelLine={true}
+                        >
+                          {categoryPieData.map((entry, index) => {
+                            const colors = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#64748b', '#ef4444'];
+                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                          })}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: any) => `₹${Number(value || 0).toLocaleString('en-IN')}`}
+                          contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           
           <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 text-center text-xs font-bold text-muted-foreground tracking-wider uppercase">
