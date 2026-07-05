@@ -78,6 +78,25 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
     return Array.from(cats);
   }, [transactions]);
 
+  const dateRangeLabel = useMemo(() => {
+    if (transactions.length === 0) return null;
+    let minDate = new Date().getTime();
+    let maxDate = 0;
+    
+    transactions.forEach(t => {
+      const d = new Date(t.transactionDate || t.receivedAt).getTime();
+      if (!isNaN(d)) {
+        if (d < minDate) minDate = d;
+        if (d > maxDate) maxDate = d;
+      }
+    });
+    
+    if (maxDate === 0) return null;
+    
+    const format = (ms: number) => new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `Data available from ${format(minDate)} to ${format(maxDate)}`;
+  }, [transactions]);
+
   const filteredAndSorted = useMemo(() => {
     let result = [...transactions];
 
@@ -202,11 +221,19 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
     <div className="p-4 md:p-8 w-full overflow-x-hidden">
       <div className="max-w-[1400px] mx-auto space-y-6">
         
-        <header className="flex justify-between items-end mb-6">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, type: 'spring' }}>
             <h1 className="text-3xl font-bold tracking-tight mb-1">All Transactions</h1>
             <p className="text-muted-foreground text-sm">Advanced view of your complete history with filters.</p>
           </motion.div>
+          {dateRangeLabel && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, type: 'spring', delay: 0.1 }}
+              className="px-4 py-2 bg-primary/5 text-primary text-xs font-bold rounded-full border border-primary/10 tracking-wide"
+            >
+              {dateRangeLabel}
+            </motion.div>
+          )}
         </header>
 
         {/* Filters & Controls */}
