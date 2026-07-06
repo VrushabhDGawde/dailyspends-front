@@ -622,78 +622,80 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
             </AnimatePresence>
           </div>
           
-          <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-3xl">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground font-semibold">
-              <span>Rows per page:</span>
-              <select
-                value={rowsPerPage}
-                onChange={e => {
-                  setRowsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent border border-border/50 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-bold"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Previous Page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+          {viewMode === 'table' && (
+            <div className="p-4 border-t border-border bg-black/5 dark:bg-white/5 flex flex-col md:flex-row items-center justify-between gap-4 rounded-b-3xl">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-semibold">
+                <span>Rows per page:</span>
+                <select
+                  value={rowsPerPage}
+                  onChange={e => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="bg-transparent border border-border/50 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer font-bold"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
               
-              {Array.from({ length: totalPages }).map((_, i) => {
-                const page = i + 1;
-                // Show first, last, and pages around current page
-                if (
-                  page === 1 || 
-                  page === totalPages || 
-                  (page >= currentPage - 1 && page <= currentPage + 1)
-                ) {
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === page ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground'}`}
-                    >
-                      {page}
-                    </button>
-                  );
-                }
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
                 
-                if (page === currentPage - 2 || page === currentPage + 2) {
-                  return <span key={page} className="text-muted-foreground tracking-widest px-1">...</span>;
-                }
+                {Array.from({ length: totalPages }).map((_, i) => {
+                  const page = i + 1;
+                  // Show first, last, and pages around current page
+                  if (
+                    page === 1 || 
+                    page === totalPages || 
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${currentPage === page ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground'}`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  }
+                  
+                  if (page === currentPage - 2 || page === currentPage + 2) {
+                    return <span key={page} className="text-muted-foreground tracking-widest px-1">...</span>;
+                  }
+                  
+                  return null;
+                })}
                 
-                return null;
-              })}
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
               
-              <button 
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Next Page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest hidden md:block">
+                {filteredAndSorted.length > 0 ? (
+                  <>Showing {(currentPage - 1) * rowsPerPage + 1}-{Math.min(currentPage * rowsPerPage, filteredAndSorted.length)} of {filteredAndSorted.length}</>
+                ) : (
+                  <>No transactions</>
+                )}
+              </div>
             </div>
-            
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest hidden md:block">
-              {filteredAndSorted.length > 0 ? (
-                <>Showing {(currentPage - 1) * rowsPerPage + 1}-{Math.min(currentPage * rowsPerPage, filteredAndSorted.length)} of {filteredAndSorted.length}</>
-              ) : (
-                <>No transactions</>
-              )}
-            </div>
-          </div>
+          )}
         </div>
 
       </div>
