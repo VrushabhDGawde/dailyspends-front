@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, User as UserIcon } from 'lucide-react';
+import { X, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import { authApi } from '../services/authApi';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -10,6 +12,35 @@ interface AuthModalProps {
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const { login } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const response = await authApi.login({ email, password });
+        login(response.accessToken);
+        onClose();
+      } else {
+        await authApi.register({ fullName, email, password });
+        setIsLogin(true);
+        setError('Account created successfully! Please sign in.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -58,8 +89,23 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </motion.p>
               </motion.div>
 
-              <motion.div layout className="space-y-4">
+              <motion.form layout onSubmit={handleSubmit} className="space-y-4">
                 <AnimatePresence mode="popLayout">
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`p-3 rounded-xl flex items-center gap-2 text-sm ${
+                        error.includes('successfully') 
+                          ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                          : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                      }`}
+                    >
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <p>{error}</p>
+                    </motion.div>
+                  )}
                   {!isLogin && (
                     <motion.div
                       key="name"
@@ -74,6 +120,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                         <UserIcon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <input 
                           type="text" 
+                          required={!isLogin}
+                          value={fullName}
+                          onChange={e => setFullName(e.target.value)}
                           placeholder="John Doe" 
                           className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/50"
                         />
@@ -88,6 +137,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input 
                       type="email" 
+                      required
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
                       placeholder="you@example.com" 
                       className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/50"
                     />
@@ -103,6 +155,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     <Lock className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input 
                       type={showPassword ? "text" : "password"} 
+                      required
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
                       placeholder="••••••••" 
                       className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl pl-10 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/50"
                     />
@@ -118,12 +173,20 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <motion.button 
                   layout
+                  type="submit"
+                  disabled={isLoading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-foreground text-background font-medium py-3.5 rounded-xl flex items-center justify-center gap-2 mt-6 shadow-md hover:shadow-lg transition-all"
+                  className="w-full bg-foreground text-background font-medium py-3.5 rounded-xl flex items-center justify-center gap-2 mt-6 shadow-md hover:shadow-lg transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4" />
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      {isLogin ? 'Sign In' : 'Create Account'}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </motion.button>
 
                 <motion.div layout className="relative flex items-center py-5">
@@ -134,6 +197,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <motion.div layout className="grid grid-cols-2 gap-3">
                   <motion.button 
+                    type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="w-full bg-white dark:bg-zinc-800 border border-border text-foreground font-medium py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm"
@@ -147,6 +211,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     Google
                   </motion.button>
                   <motion.button 
+                    type="button"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     className="w-full bg-white dark:bg-zinc-800 border border-border text-foreground font-medium py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm hover:bg-black/5 dark:hover:bg-white/5 transition-all text-sm"
@@ -159,7 +224,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   </motion.button>
                 </motion.div>
 
-              </motion.div>
+              </motion.form>
 
               <motion.div layout className="mt-8 text-center">
                 <button 
