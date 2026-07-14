@@ -505,7 +505,32 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
           )}
         </AnimatePresence>
 
-        {/* Section 1: Top Metrics Grid */}
+        {transactions.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center p-8 glass rounded-3xl border border-white/10 mt-6"
+          >
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary relative">
+              <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+              <Sparkles className="w-12 h-12 relative z-10" />
+            </div>
+            <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Welcome to DailySpends</h2>
+            <p className="text-muted-foreground text-lg max-w-md mx-auto mb-10 leading-relaxed">
+              You're all set! To see your dashboard come alive with insights, heatmaps, and budgets, start by adding your very first transaction.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsQuickAddOpen(true)}
+              className="bg-primary text-primary-foreground px-8 py-4 rounded-2xl text-lg font-bold shadow-xl hover:shadow-2xl transition-all flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" /> Log First Expense
+            </motion.button>
+          </motion.div>
+        ) : (
+          <>
+            {/* Section 1: Top Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: Today's Spend */}
           <motion.div
@@ -852,6 +877,8 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Pie Chart Modal (Frosted Glass) */}

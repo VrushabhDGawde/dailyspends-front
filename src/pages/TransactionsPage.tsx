@@ -252,7 +252,23 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
     <div className="p-4 md:p-8 w-full overflow-x-hidden">
       <div className="max-w-[1400px] mx-auto space-y-6">
         
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+        {transactions.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="w-full min-h-[60vh] flex flex-col items-center justify-center text-center p-8 glass rounded-3xl border border-white/10"
+          >
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary">
+              <CalendarIcon className="w-12 h-12" />
+            </div>
+            <h2 className="text-3xl font-extrabold mb-2">No Transactions Yet</h2>
+            <p className="text-muted-foreground text-lg max-w-md mx-auto mb-8">
+              Your financial journey starts here. Add your first expense or income to start seeing beautiful heatmaps and AI insights.
+            </p>
+          </motion.div>
+        ) : (
+          <>
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, type: 'spring' }}>
             <h1 className="text-3xl font-bold tracking-tight mb-1">All Transactions</h1>
             <p className="text-muted-foreground text-sm">Advanced view of your complete history with filters.</p>
@@ -697,6 +713,8 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
             </div>
           )}
         </div>
+          </>
+        )}
 
       </div>
     </div>

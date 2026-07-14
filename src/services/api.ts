@@ -21,27 +21,54 @@ const API_BASE_URL = 'http://localhost:8080/api/v1/transactions';
 
 export async function fetchTransactions(): Promise<RawSmsLog[]> {
   try {
-    const response = await fetch(API_BASE_URL);
+    const token = localStorage.getItem('spendsense_auth_token');
+    const response = await fetch(API_BASE_URL, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const data: RawSmsLog[] = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error("Failed to fetch transactions:", error);
-    // Return mock data if backend is down for UI dev purposes
-    return getMockData();
+    console.warn("Backend transactions not ready. Falling back to local/demo data.");
+    
+    const token = localStorage.getItem('spendsense_auth_token');
+    if (token) {
+      // Production Grade: Real user gets their own local DB instead of demo data
+      const localData = localStorage.getItem('spendsense_user_transactions');
+      if (localData) {
+        return JSON.parse(localData);
+      }
+      return []; // Return clean empty state
+    } else {
+      // Demo Mode
+      return getMockData();
+    }
   }
 }
 
 let cachedMockData: RawSmsLog[] | null = null;
 
 export async function addTransaction(tx: RawSmsLog): Promise<void> {
-  // In a real app this would POST to the backend
-  if (!cachedMockData) {
-    cachedMockData = getMockData();
+  const token = localStorage.getItem('spendsense_auth_token');
+  
+  if (token) {
+    const localData = localStorage.getItem('spendsense_user_transactions');
+    let txs = localData ? JSON.parse(localData) : [];
+    
+    // Assign a unique ID
+    tx.id = Date.now();
+    txs = [tx, ...txs];
+    
+    localStorage.setItem('spendsense_user_transactions', JSON.stringify(txs));
+  } else {
+    if (!cachedMockData) {
+      cachedMockData = getMockData();
+    }
+    tx.id = Date.now();
+    cachedMockData = [tx, ...cachedMockData];
   }
-  cachedMockData = [tx, ...cachedMockData];
 }
 
 function getMockData(): RawSmsLog[] {

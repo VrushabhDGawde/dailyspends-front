@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home } from 'lucide-react';
+import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const NAV_ITEMS = [
   { name: 'Tonight', icon: Home, page: 'tonight' },
@@ -21,6 +22,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, isDemoMode, onExitDemo }: SidebarProps) {
+  const { user, isAuthenticated, logout } = useAuth();
+  
   return (
     <>
       {/* Desktop Sidebar */}
@@ -114,21 +117,42 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
             </div>
           )}
 
-          <button 
-            onClick={onOpenAuth}
-            className={`w-full flex items-center rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group ${isCollapsed ? 'justify-center p-0 mt-4' : 'gap-3 p-2'}`}
-            title="Guest User"
-          >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-200 dark:from-indigo-900 dark:to-purple-900 border border-white/50 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
-              <User className="w-5 h-5 text-indigo-700 dark:text-indigo-300" />
-            </div>
-            {!isCollapsed && (
-              <div className="text-left flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">Guest User</p>
-                <p className="text-xs text-muted-foreground truncate">Sign in to sync</p>
+          {isAuthenticated ? (
+            <div className={`flex items-center rounded-xl transition-colors group ${isCollapsed ? 'justify-center p-0 mt-4' : 'gap-3 p-2 border border-border/50 bg-white/30 dark:bg-black/20'}`}>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 dark:from-green-900 dark:to-emerald-900 border border-white/50 dark:border-white/10 flex items-center justify-center shrink-0">
+                <span className="text-emerald-700 dark:text-emerald-300 font-bold uppercase">
+                  {user?.name ? user.name.charAt(0) : user?.email?.charAt(0) || 'U'}
+                </span>
               </div>
-            )}
-          </button>
+              {!isCollapsed && (
+                <div className="text-left flex-1 min-w-0 pr-2">
+                  <p className="text-sm font-semibold truncate">{user?.name || user?.email?.split('@')[0]}</p>
+                  <button 
+                    onClick={logout}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition-colors mt-0.5"
+                  >
+                    <LogOut className="w-3 h-3" /> Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button 
+              onClick={onOpenAuth}
+              className={`w-full flex items-center rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group ${isCollapsed ? 'justify-center p-0 mt-4' : 'gap-3 p-2'}`}
+              title="Guest User"
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-purple-200 dark:from-indigo-900 dark:to-purple-900 border border-white/50 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                <User className="w-5 h-5 text-indigo-700 dark:text-indigo-300" />
+              </div>
+              {!isCollapsed && (
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">Guest User</p>
+                  <p className="text-xs text-muted-foreground truncate">Sign in to sync</p>
+                </div>
+              )}
+            </button>
+          )}
         </div>
       </motion.aside>
 
