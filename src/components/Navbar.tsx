@@ -16,9 +16,11 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   isDark: boolean;
   toggleTheme: () => void;
+  isDemoMode?: boolean;
+  onExitDemo?: () => void;
 }
 
-export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme }: SidebarProps) {
+export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, isDemoMode, onExitDemo }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
@@ -97,6 +99,20 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
               <Settings className="w-5 h-5" />
             </button>
           </div>
+
+          {isDemoMode && (
+            <div className={`mt-4 ${isCollapsed ? 'hidden' : 'block'}`}>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mb-2 uppercase tracking-wider">Demo Mode</p>
+                <button 
+                  onClick={onExitDemo}
+                  className="w-full py-1.5 bg-amber-500 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-amber-600 transition-colors"
+                >
+                  Exit Demo
+                </button>
+              </div>
+            </div>
+          )}
 
           <button 
             onClick={onOpenAuth}
