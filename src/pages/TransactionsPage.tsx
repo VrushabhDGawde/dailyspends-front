@@ -604,34 +604,58 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                       <p>No expense data to breakdown.</p>
                     </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categoryPieData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={80}
-                          outerRadius={160}
-                          paddingAngle={5}
-                          dataKey="value"
-                          nameKey="name"
-                          label={({ name, percent }: any) => {
-                            const shortName = name.length > 20 ? name.slice(0, 20) + '...' : name;
-                            return `${shortName} ${((percent || 0) * 100).toFixed(0)}%`;
-                          }}
-                          labelLine={true}
-                        >
-                          {categoryPieData.map((entry, index) => {
-                            const colors = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#64748b', '#ef4444'];
-                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                          })}
-                        </Pie>
-                        <Tooltip 
-                          formatter={(value: any) => `₹${Number(value || 0).toLocaleString('en-IN')}`}
-                          contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <defs>
+                              <filter id="pieShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="10" stdDeviation="15" floodOpacity="0.2" floodColor="#000" />
+                              </filter>
+                              {/* Premium Gradients */}
+                              <linearGradient id="grad0" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#6d28d9"/></linearGradient>
+                              <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#be185d"/></linearGradient>
+                              <linearGradient id="grad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1d4ed8"/></linearGradient>
+                              <linearGradient id="grad3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#10b981"/><stop offset="100%" stopColor="#047857"/></linearGradient>
+                              <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#b45309"/></linearGradient>
+                              <linearGradient id="grad5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#0369a1"/></linearGradient>
+                              <linearGradient id="grad6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#64748b"/><stop offset="100%" stopColor="#334155"/></linearGradient>
+                              <linearGradient id="grad7" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef4444"/><stop offset="100%" stopColor="#b91c1c"/></linearGradient>
+                            </defs>
+                            <Pie
+                              data={categoryPieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={110}
+                              outerRadius={160}
+                              paddingAngle={6}
+                              cornerRadius={12}
+                              dataKey="value"
+                              nameKey="name"
+                              stroke="none"
+                              labelLine={false}
+                              label={false}
+                            >
+                              {categoryPieData.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={`url(#grad${index % 8})`} 
+                                  filter="url(#pieShadow)"
+                                  style={{ outline: 'none' }}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              formatter={(value: any) => `₹${Number(value || 0).toLocaleString('en-IN')}`}
+                              contentStyle={{ borderRadius: '1.5rem', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)' }}
+                              itemStyle={{ fontWeight: 900, color: '#000' }}
+                            />
+                            <Legend 
+                               verticalAlign="bottom" 
+                               height={36}
+                               iconType="circle"
+                               formatter={(value) => <span className="text-foreground font-bold text-xs px-1">{value}</span>}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
                   )}
                 </motion.div>
               )}

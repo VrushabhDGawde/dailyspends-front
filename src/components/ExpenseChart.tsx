@@ -53,25 +53,42 @@ export function ExpenseChart({ transactions }: Props) {
           <div className="relative h-48 w-full mb-6">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
+                <defs>
+                  <filter id="expensePieShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="8" stdDeviation="10" floodOpacity="0.25" floodColor="#000" />
+                  </filter>
+                  <linearGradient id="expGrad0" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#6d28d9"/></linearGradient>
+                  <linearGradient id="expGrad1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#3b82f6"/><stop offset="100%" stopColor="#1d4ed8"/></linearGradient>
+                  <linearGradient id="expGrad2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#10b981"/><stop offset="100%" stopColor="#047857"/></linearGradient>
+                  <linearGradient id="expGrad3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b"/><stop offset="100%" stopColor="#b45309"/></linearGradient>
+                  <linearGradient id="expGrad4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ef4444"/><stop offset="100%" stopColor="#b91c1c"/></linearGradient>
+                  <linearGradient id="expGrad5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ec4899"/><stop offset="100%" stopColor="#be185d"/></linearGradient>
+                  <linearGradient id="expGrad6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#6b7280"/><stop offset="100%" stopColor="#374151"/></linearGradient>
+                </defs>
                 <Pie
                   data={chartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius="75%"
-                  outerRadius="100%"
-                  paddingAngle={5}
+                  innerRadius="70%"
+                  outerRadius="95%"
+                  paddingAngle={8}
                   dataKey="value"
                   stroke="none"
-                  cornerRadius={10}
+                  cornerRadius={12}
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`url(#expGrad${index % 7})`} 
+                      filter="url(#expensePieShadow)"
+                      style={{ outline: 'none' }}
+                    />
                   ))}
                 </Pie>
                 <Tooltip 
                   formatter={(value: any) => `₹${Number(value).toLocaleString('en-IN')}`}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', background: 'rgba(30, 30, 30, 0.8)', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ borderRadius: '1rem', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.3)', background: 'rgba(20, 20, 20, 0.85)', backdropFilter: 'blur(10px)', color: '#fff' }}
+                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                 />
               </PieChart>
             </ResponsiveContainer>
