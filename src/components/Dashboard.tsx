@@ -38,7 +38,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   const { totalIncome, balance, expenseDates } = useMemo(() => {
     let income = 0;
     const dates = new Set<string>();
-    
+
     transactions.forEach(t => {
       if (t.transactionType === 'DEBIT') {
         const d = new Date(t.transactionDate || t.receivedAt).toISOString().split('T')[0];
@@ -75,13 +75,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-[1400px] mx-auto space-y-6">
-        
+
         <header className="flex justify-between items-end mb-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, type: 'spring' }}>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">SpendSense Overview</h1>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">DailySpends Overview</h1>
             <p className="text-muted-foreground text-sm">Your financial AI assistant.</p>
           </motion.div>
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={loadData}
@@ -93,11 +93,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
         {/* Desktop Split View Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          
+
           {/* LEFT COLUMN: Primary Focus (Daily Spend, Trends, Transactions) */}
           <div className="xl:col-span-2 space-y-6">
             <DailyHero transactions={transactions} selectedDate={selectedDate} />
-            
+
             <div className="h-80">
               <TrendChart transactions={transactions} />
             </div>
@@ -121,17 +121,17 @@ export function Dashboard({ onNavigate }: DashboardProps) {
 
           {/* RIGHT COLUMN: Context & Navigation (Calendar, Metrics, Breakdown) */}
           <div className="xl:col-span-1 space-y-6">
-            <FullCalendar 
-              selectedDate={selectedDate} 
-              onSelectDate={setSelectedDate} 
-              expenseDates={expenseDates} 
+            <FullCalendar
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              expenseDates={expenseDates}
             />
 
             <div className="flex flex-col gap-4">
-              <MetricCard 
-                title="Current Balance" 
-                value={`₹${balance.toLocaleString('en-IN')}`} 
-                icon={Wallet} 
+              <MetricCard
+                title="Current Balance"
+                value={`₹${balance.toLocaleString('en-IN')}`}
+                icon={Wallet}
                 delay={0.1}
               />
               <IncomeCard amount={totalIncome} />
