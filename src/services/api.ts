@@ -17,7 +17,7 @@ export interface RawSmsLog {
   upiRef: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api/v1/transactions';
+const API_BASE_URL = '/api/v1/transactions';
 
 export async function fetchTransactions(): Promise<RawSmsLog[]> {
   try {
@@ -54,15 +54,21 @@ export async function addTransaction(tx: RawSmsLog): Promise<void> {
   const token = localStorage.getItem('spendsense_auth_token');
   
   if (token) {
-    const localData = localStorage.getItem('spendsense_user_transactions');
-    let txs = localData ? JSON.parse(localData) : [];
-    
-    // Assign a unique ID
-    tx.id = Date.now();
-    txs = [tx, ...txs];
-    
-    localStorage.setItem('spendsense_user_transactions', JSON.stringify(txs));
+    // Send directly to the backend
+    const response = await fetch(`${API_BASE_URL}/manual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(tx)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
   } else {
+    // Demo Mode logic
     if (!cachedMockData) {
       cachedMockData = getMockData();
     }
