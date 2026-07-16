@@ -4,6 +4,7 @@ import { AdminSidebar } from './components/AdminSidebar';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminResolutionQueue } from './AdminResolutionQueue';
 import { AdminRulesEngine } from './AdminRulesEngine';
+import { AdminComplaints } from './AdminComplaints';
 
 export function AdminApp() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -39,6 +40,7 @@ export function AdminApp() {
         {currentTab === 'users' && <AdminDashboard />} {/* Reusing dashboard for users tab for now */}
         {currentTab === 'resolution' && <AdminResolutionQueue />}
         {currentTab === 'rules' && <AdminRulesEngine />}
+        {currentTab === 'complaints' && <AdminComplaints />}
         {currentTab === 'settings' && (
           <div className="p-8 flex items-center justify-center h-full text-zinc-500">
             Platform Settings Module (Coming Soon)

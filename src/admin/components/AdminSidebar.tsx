@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Settings, LogOut, ShieldAlert, CheckSquare, GitPullRequestDraft } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, LogOut, ShieldAlert, CheckSquare, GitPullRequestDraft, MessageSquareWarning } from 'lucide-react';
 
 interface Props {
   currentTab: string;
@@ -14,6 +14,7 @@ export function AdminSidebar({ currentTab, onNavigate, onLogout }: Props) {
     { id: 'users', icon: Users, label: 'User Management' },
     { id: 'resolution', icon: CheckSquare, label: 'Resolution Center' },
     { id: 'rules', icon: GitPullRequestDraft, label: 'Rules Engine' },
+    { id: 'complaints', icon: MessageSquareWarning, label: 'Support Tickets' },
     { id: 'settings', icon: Settings, label: 'Platform Settings' },
   ];
 
