@@ -11,6 +11,7 @@ import {
   Clock, CalendarDays, Grid, ChevronRight, List, ArrowDownRight,
   Target, PieChart, Check
 } from 'lucide-react';
+import { TransactionReviewModal } from '../components/TransactionReviewModal';
 
 const CATEGORIES = [
   'Food & Dining',
@@ -68,7 +69,9 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
   const [loading, setLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  
+  // Transaction Review State
+  const [reviewingTx, setReviewingTx] = useState<RawSmsLog | null>(null);
 
   // Track category overrides
   const [categoryOverrides, setCategoryOverrides] = useState<Record<number, string>>({});
@@ -675,7 +678,8 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                         layout
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 border border-transparent hover:border-border transition-all gap-4"
+                        onClick={() => setReviewingTx(tx)}
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 border border-transparent hover:border-primary/50 transition-all gap-4 cursor-pointer"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
@@ -684,20 +688,10 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                           <div>
                             <h3 className="font-bold text-foreground line-clamp-1">{tx.merchantClean || tx.merchantRaw}</h3>
                             <div className="flex items-center gap-2 mt-1">
-                              {editingId === tx.id ? (
-                                <select 
-                                  value={currentCategory}
-                                  onChange={(e) => handleCategoryChange(tx.id, e.target.value)}
-                                  className="text-xs bg-black/5 dark:bg-white/10 rounded-md px-2 py-1 outline-none border border-border"
-                                >
-                                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[10px] font-bold text-muted-foreground">
-                                  {currentCategory}
-                                  <button onClick={() => setEditingId(tx.id)} className="hover:text-primary transition-colors p-0.5"><Edit3 className="w-3 h-3" /></button>
-                                </span>
-                              )}
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[10px] font-bold text-muted-foreground">
+                                {currentCategory}
+                                <span className="hover:text-primary transition-colors p-0.5"><Edit3 className="w-3 h-3" /></span>
+                              </span>
                               <span className="text-xs text-muted-foreground opacity-50 flex items-center gap-1">
                                 • {tx.paymentMode || 'UPI'}
                               </span>
@@ -973,6 +967,22 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Transaction Review Modal */}
+      <TransactionReviewModal 
+        isOpen={!!reviewingTx}
+        onClose={() => setReviewingTx(null)}
+        transaction={reviewingTx}
+        onSave={(updatedTx) => {
+          // Temporarily update local state to reflect UI changes instantly
+          setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
+          // If category changed, also update the override map so stats rebuild properly
+          if (updatedTx.category) {
+            handleCategoryChange(updatedTx.id, updatedTx.category);
+          }
+          setReviewingTx(null);
+        }}
+      />
     </div>
   );
 }

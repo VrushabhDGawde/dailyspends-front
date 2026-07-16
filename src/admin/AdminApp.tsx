@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { AdminLogin } from './AdminLogin';
 import { AdminSidebar } from './components/AdminSidebar';
 import { AdminDashboard } from './AdminDashboard';
-import { AdminResolutionQueue } from './AdminResolutionQueue';
 import { AdminRulesEngine } from './AdminRulesEngine';
 import { AdminComplaints } from './AdminComplaints';
 
@@ -38,7 +37,6 @@ export function AdminApp() {
       <main className="flex-1 ml-64 overflow-x-hidden">
         {currentTab === 'dashboard' && <AdminDashboard />}
         {currentTab === 'users' && <AdminDashboard />} {/* Reusing dashboard for users tab for now */}
-        {currentTab === 'resolution' && <AdminResolutionQueue />}
         {currentTab === 'rules' && <AdminRulesEngine />}
         {currentTab === 'complaints' && <AdminComplaints />}
         {currentTab === 'settings' && (
