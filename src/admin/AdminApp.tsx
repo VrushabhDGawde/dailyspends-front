@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AdminLogin } from './AdminLogin';
 import { AdminSidebar } from './components/AdminSidebar';
 import { AdminDashboard } from './AdminDashboard';
+import { AdminSmsStats } from './AdminSmsStats';
 
 export function AdminApp() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -35,6 +36,7 @@ export function AdminApp() {
       <main className="flex-1 ml-64 overflow-x-hidden">
         {currentTab === 'dashboard' && <AdminDashboard />}
         {currentTab === 'users' && <AdminDashboard />} {/* Reusing dashboard for users tab for now */}
+        {currentTab === 'sms-stats' && <AdminSmsStats />}
         {currentTab === 'settings' && (
           <div className="p-8 flex items-center justify-center h-full text-zinc-500">
             Platform Settings Module (Coming Soon)
