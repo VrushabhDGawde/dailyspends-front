@@ -1,4 +1,5 @@
 export interface RawSmsLog {
+  // Add a comment to trigger Vite cache invalidation
   id: number;
   sender: string;
   smsBody: string;

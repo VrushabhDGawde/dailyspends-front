@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Inbox, ArrowRight, MessageSquare } from 'lucide-react';
-import { RawSmsLog } from '../services/api';
+import { type RawSmsLog } from '../services/api';
 
 interface Props {
   unverifiedTransactions: RawSmsLog[];

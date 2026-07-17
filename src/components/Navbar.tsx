@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home, LogOut } from 'lucide-react';
+import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home, LogOut, Inbox } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NAV_ITEMS = [
   { name: 'Tonight', icon: Home, page: 'tonight' },
   { name: 'Transactions', icon: CalendarDays, page: 'transactions' },
   { name: 'Insights', icon: Sparkles, page: 'insights' },
+  { name: 'Resolution Center', icon: Inbox, page: 'resolution' },
 ];
 
 interface SidebarProps {
@@ -19,9 +20,10 @@ interface SidebarProps {
   toggleTheme: () => void;
   isDemoMode?: boolean;
   onExitDemo?: () => void;
+  unverifiedCount?: number;
 }
 
-export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, isDemoMode, onExitDemo }: SidebarProps) {
+export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, isDemoMode, onExitDemo, unverifiedCount = 0 }: SidebarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   
   return (
@@ -53,22 +55,27 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
           <nav className="space-y-1.5">
             {!isCollapsed && <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pl-2">Menu</div>}
             {NAV_ITEMS.map((item) => {
-              const isActive = currentPage === item.page;
               return (
                 <button
                   key={item.name}
                   onClick={() => onNavigate(item.page)}
-                  title={item.name}
-                  className={`w-full flex items-center py-2.5 rounded-xl text-sm font-medium transition-all ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${
-                    isActive 
-                      ? "bg-primary/10 text-primary dark:bg-primary/20" 
-                      : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-200 group relative ${
+                    currentPage === item.page 
+                      ? 'bg-foreground text-background shadow-md' 
+                      : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
                   }`}
                 >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
-                  {!isCollapsed && item.page === 'insights' && (
-                    <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-gradient-to-r from-violet-500 to-purple-500 text-white px-2 py-0.5 rounded-full">AI</span>
+                  <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-4'}`}>
+                    <item.icon className={`w-5 h-5 shrink-0 ${currentPage === item.page ? 'text-background' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                    {!isCollapsed && (
+                      <span className="font-bold tracking-tight">{item.name}</span>
+                    )}
+                  </div>
+                  {/* Notification Badge */}
+                  {item.page === 'resolution' && unverifiedCount > 0 && (
+                    <span className={`flex items-center justify-center font-bold shrink-0 ${isCollapsed ? 'absolute top-1 right-1 w-4 h-4 text-[9px]' : 'px-2 py-0.5 text-[10px]'} rounded-full bg-red-500 text-white shadow-sm`}>
+                      {unverifiedCount}
+                    </span>
                   )}
                 </button>
               );
@@ -169,12 +176,17 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
               <button
                 key={item.name}
                 onClick={() => onNavigate(item.page)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all relative ${
                   isActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 <item.icon className="w-6 h-6" />
-                <span className="text-[10px] font-medium">{item.name}</span>
+                <span className="text-[10px] font-medium text-center leading-tight max-w-[60px] truncate">{item.name}</span>
+                {item.page === 'resolution' && unverifiedCount > 0 && (
+                  <span className="absolute top-1 right-2 w-3.5 h-3.5 text-[8px] font-bold flex items-center justify-center rounded-full bg-red-500 text-white shadow-sm">
+                    {unverifiedCount}
+                  </span>
+                )}
               </button>
             );
           })}

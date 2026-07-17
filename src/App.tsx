@@ -7,7 +7,9 @@ import { TransactionsPage } from './pages/TransactionsPage';
 import { InsightsPage } from './pages/InsightsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
+import { ResolutionPage } from './pages/ResolutionPage';
 import { useAuth } from './contexts/AuthContext';
+import { fetchTransactions } from './services/api';
 
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -22,6 +24,27 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) setIsDemoMode(false);
   }, [isAuthenticated]);
+
+  // Global unverified count for the sidebar badge
+  const [unverifiedCount, setUnverifiedCount] = useState(0);
+
+  useEffect(() => {
+    // Basic fetch to keep the sidebar badge updated
+    const loadUnverifiedCount = async () => {
+      try {
+        const data = await fetchTransactions();
+        const unverified = data.filter(t => !t.isReviewed && t.transactionType === 'DEBIT').length;
+        setUnverifiedCount(unverified);
+      } catch (error) {
+        console.error("Failed to fetch global unverified count:", error);
+      }
+    };
+    
+    loadUnverifiedCount();
+    // In a real app, this might poll or be updated via Context/WebSockets
+    const interval = setInterval(loadUnverifiedCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Global Settings State
   const [isDark, setIsDark] = useState(() => {
@@ -72,11 +95,15 @@ function App() {
           isDark={isDark}
           toggleTheme={toggleTheme}
           isDemoMode={isDemoMode}
-          onExitDemo={() => setIsDemoMode(false)}
+          onExitDemo={() => {
+            setIsDemoMode(false);
+            setIsAuthModalOpen(true);
+          }}
+          unverifiedCount={unverifiedCount}
         />
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         
-        <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'} pb-20 md:pb-0 min-h-screen`}>
+        <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
           {currentPage === 'tonight' && (
             <TonightPage onNavigateToTransactions={(filter) => {
               setTxFilterState(filter);
@@ -89,6 +116,7 @@ function App() {
               onFilterConsumed={() => setTxFilterState(null)} 
             />
           )}
+          {currentPage === 'resolution' && <ResolutionPage />}
           {currentPage === 'insights' && <InsightsPage />}
           {currentPage === 'settings' && (
             <SettingsPage 
@@ -96,7 +124,7 @@ function App() {
               reduceMotion={reduceMotion} toggleMotion={toggleMotion}
             />
           )}
-        </div>
+        </main>
       </div>
     </MotionConfig>
   );

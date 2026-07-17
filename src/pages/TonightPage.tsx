@@ -311,7 +311,6 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
   const handleCategoryChange = useCallback((txId: number, newCategory: string) => {
     setCategoryOverrides(prev => ({ ...prev, [txId]: newCategory }));
-    setEditingId(null);
   }, []);
 
   const handleQuickAddSubmit = async (e: React.FormEvent) => {
