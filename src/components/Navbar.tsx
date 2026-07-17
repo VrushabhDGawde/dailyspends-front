@@ -55,25 +55,30 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
           <nav className="space-y-1.5">
             {!isCollapsed && <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 pl-2">Menu</div>}
             {NAV_ITEMS.map((item) => {
+              const isActive = currentPage === item.page;
               return (
                 <button
                   key={item.name}
                   onClick={() => onNavigate(item.page)}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-200 group relative ${
-                    currentPage === item.page 
-                      ? 'bg-foreground text-background shadow-md' 
-                      : 'text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground'
+                  title={item.name}
+                  className={`w-full flex items-center py-2.5 rounded-xl text-sm font-medium transition-all relative ${isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'} ${
+                    isActive 
+                      ? "bg-primary/10 text-primary dark:bg-primary/20" 
+                      : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"
                   }`}
                 >
-                  <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-4'}`}>
-                    <item.icon className={`w-5 h-5 shrink-0 ${currentPage === item.page ? 'text-background' : 'text-muted-foreground group-hover:text-foreground'}`} />
-                    {!isCollapsed && (
-                      <span className="font-bold tracking-tight">{item.name}</span>
-                    )}
-                  </div>
-                  {/* Notification Badge */}
-                  {item.page === 'resolution' && unverifiedCount > 0 && (
-                    <span className={`flex items-center justify-center font-bold shrink-0 ${isCollapsed ? 'absolute top-1 right-1 w-4 h-4 text-[9px]' : 'px-2 py-0.5 text-[10px]'} rounded-full bg-red-500 text-white shadow-sm`}>
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">{item.name}</span>}
+                  {!isCollapsed && item.page === 'insights' && (
+                    <span className="ml-auto text-[9px] font-bold uppercase tracking-widest bg-gradient-to-r from-violet-500 to-purple-500 text-white px-2 py-0.5 rounded-full">AI</span>
+                  )}
+                  {!isCollapsed && item.page === 'resolution' && unverifiedCount > 0 && (
+                    <span className="ml-auto flex items-center justify-center font-bold px-2 py-0.5 text-[10px] rounded-full bg-red-500 text-white shadow-sm">
+                      {unverifiedCount}
+                    </span>
+                  )}
+                  {isCollapsed && item.page === 'resolution' && unverifiedCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-red-500 text-white shadow-sm">
                       {unverifiedCount}
                     </span>
                   )}
