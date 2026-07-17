@@ -12,6 +12,7 @@ import {
   Target, PieChart, Check
 } from 'lucide-react';
 import { TransactionReviewModal } from '../components/TransactionReviewModal';
+import { UserResolutionCenter } from '../components/UserResolutionCenter';
 
 const CATEGORIES = [
   'Food & Dining',
@@ -251,6 +252,10 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
   const diff = totalSpent - yesterdaySpent;
   const isHigher = diff > 0;
+
+  const unverifiedTxs = useMemo(() => {
+    return todayTransactions.filter(t => !t.isReviewed && t.transactionType === 'DEBIT');
+  }, [todayTransactions]);
 
   // Daily Limit Calculations
   const daysInMonth = useMemo(() => {
@@ -871,6 +876,22 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
           </div>
         </div>
+
+        {/* User Resolution Center (Inbox for unverified SMS) */}
+        {!isSubmitted && (
+          <UserResolutionCenter 
+            unverifiedTransactions={unverifiedTxs}
+            onResolve={(updatedTx) => {
+              // Update local state instantly and mark as reviewed
+              const finalTx = { ...updatedTx, isReviewed: true };
+              setTransactions(prev => prev.map(t => t.id === finalTx.id ? finalTx : t));
+              if (finalTx.category) {
+                handleCategoryChange(finalTx.id, finalTx.category);
+              }
+            }}
+          />
+        )}
+        
         </>
         )}
       </div>

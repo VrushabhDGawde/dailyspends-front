@@ -15,6 +15,7 @@ export interface RawSmsLog {
   isRecurring: boolean;
   counterpartyType: string;
   upiRef: string;
+  isReviewed?: boolean;
 }
 
 const API_BASE_URL = '/api/v1/transactions';
