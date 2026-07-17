@@ -9,8 +9,9 @@ import {
   Utensils, Clapperboard, MoreHorizontal, Plus, X, Wallet, 
   AlertTriangle,
   Clock, CalendarDays, Grid, ChevronRight, List, ArrowDownRight,
-  Target, PieChart, Check, MessageSquare, ArrowRight, Inbox
+  Target, PieChart, Check
 } from 'lucide-react';
+import { TransactionReviewModal } from '../components/TransactionReviewModal';
 
 const CATEGORIES = [
   'Food & Dining',
@@ -69,40 +70,8 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   
-  // Transaction Review Workspace State
+  // Transaction Review State
   const [reviewingTx, setReviewingTx] = useState<RawSmsLog | null>(null);
-  const [reviewAmount, setReviewAmount] = useState<string>('');
-  const [reviewMerchant, setReviewMerchant] = useState<string>('');
-  const [reviewCategory, setReviewCategory] = useState<string>('');
-  const [reviewTxType, setReviewTxType] = useState<string>('DEBIT');
-
-  useEffect(() => {
-    if (reviewingTx) {
-      setReviewAmount(reviewingTx.amount?.toString() || '');
-      setReviewMerchant(reviewingTx.merchantClean || reviewingTx.merchantRaw || '');
-      setReviewCategory(reviewingTx.category || 'Other');
-      setReviewTxType(reviewingTx.transactionType || 'DEBIT');
-    }
-  }, [reviewingTx]);
-
-  const handleResolve = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reviewingTx) return;
-    
-    const updatedTx: RawSmsLog = {
-      ...reviewingTx,
-      amount: parseFloat(reviewAmount) || 0,
-      merchantClean: reviewMerchant,
-      category: reviewCategory,
-      transactionType: reviewTxType
-    };
-
-    setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
-    if (updatedTx.category) {
-      handleCategoryChange(updatedTx.id, updatedTx.category);
-    }
-    setReviewingTx(null);
-  };
 
   // Track category overrides
   const [categoryOverrides, setCategoryOverrides] = useState<Record<number, string>>({});
@@ -999,126 +968,21 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
         )}
       </AnimatePresence>
 
-      {/* Embedded Resolution Center */}
-      <div className="mt-12 pt-12 border-t border-border">
-        <header className="mb-8">
-          <h2 className="text-3xl font-extrabold flex items-center gap-3"><Inbox className="w-8 h-8 text-primary" /> Resolution Center</h2>
-          <p className="text-muted-foreground mt-2">Verify and correct how the AI parsed your recent transactions.</p>
-        </header>
-
-        {!reviewingTx ? (
-          <div className="flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 border border-dashed border-border rounded-3xl p-12">
-            <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">You're All Caught Up!</h3>
-            <p className="text-muted-foreground text-center max-w-md">Select an unverified transaction from above or wait for new SMS to arrive to train the AI.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
-            {/* Resolution Workspace */}
-            <div className="bg-white/50 dark:bg-zinc-900 border border-border rounded-3xl p-8 flex flex-col relative overflow-hidden shadow-xl">
-              {/* Background glowing accent */}
-              <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-              
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><Edit3 className="w-5 h-5 text-primary" /> Edit & Verify</h3>
-              
-              <div className="bg-black/5 dark:bg-zinc-950 border border-border p-6 rounded-2xl mb-8 relative">
-                <div className="absolute -top-3 left-4 bg-background text-primary text-xs font-bold px-2 py-1 rounded border border-border uppercase tracking-widest flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" /> Original SMS
-                </div>
-                <p className="text-lg text-foreground/80 leading-relaxed font-medium italic mt-2">
-                  "{reviewingTx.smsBody}"
-                </p>
-                <div className="mt-4 text-xs font-bold text-muted-foreground flex justify-end">
-                  Sender: {reviewingTx.sender}
-                </div>
-              </div>
-
-              <form onSubmit={handleResolve} className="space-y-6 flex-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Amount (₹)</label>
-                    <input 
-                      type="number" 
-                      required
-                      value={reviewAmount}
-                      onChange={(e) => setReviewAmount(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-black text-xl transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Transaction Type</label>
-                    <div className="flex gap-2">
-                      <button 
-                        type="button"
-                        onClick={() => setReviewTxType('DEBIT')}
-                        className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-colors ${reviewTxType === 'DEBIT' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-background border-border text-muted-foreground hover:text-foreground'}`}
-                      >
-                        DEBIT
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setReviewTxType('CREDIT')}
-                        className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-colors ${reviewTxType === 'CREDIT' ? 'bg-primary/10 text-primary border-primary/30' : 'bg-background border-border text-muted-foreground hover:text-foreground'}`}
-                      >
-                        CREDIT
-                      </button>
-                    </div>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Merchant / Title</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={reviewMerchant}
-                      onChange={(e) => setReviewMerchant(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-semibold text-lg transition-all"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Category</label>
-                    <select 
-                      value={reviewCategory}
-                      onChange={(e) => setReviewCategory(e.target.value)}
-                      className="w-full bg-background border border-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary font-medium appearance-none transition-all cursor-pointer"
-                    >
-                      {CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-border flex justify-end gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setReviewingTx(null)}
-                    className="px-6 py-3 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="bg-foreground hover:bg-foreground/90 text-background font-bold py-3 px-8 rounded-xl flex items-center gap-2 transition-transform active:scale-[0.98] shadow-xl"
-                  >
-                    Resolve & Save <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-            </div>
-            
-            {/* Spacer/Helper text for wide screens */}
-            <div className="hidden lg:flex flex-col justify-center items-center text-center p-8 opacity-50">
-              <Target className="w-16 h-16 mb-4 text-primary" />
-              <h3 className="text-xl font-bold mb-2">Train your AI</h3>
-              <p className="max-w-sm">Every time you correct a transaction, the engine learns your parsing preferences.</p>
-            </div>
-
-          </div>
-        )}
-      </div>
+      {/* Transaction Review Modal */}
+      <TransactionReviewModal 
+        isOpen={!!reviewingTx}
+        onClose={() => setReviewingTx(null)}
+        transaction={reviewingTx}
+        onSave={(updatedTx) => {
+          // Temporarily update local state to reflect UI changes instantly
+          setTransactions(prev => prev.map(t => t.id === updatedTx.id ? updatedTx : t));
+          // If category changed, also update the override map so stats rebuild properly
+          if (updatedTx.category) {
+            handleCategoryChange(updatedTx.id, updatedTx.category);
+          }
+          setReviewingTx(null);
+        }}
+      />
     </div>
   );
 }
