@@ -63,9 +63,10 @@ interface DaySummary {
 
 interface TonightPageProps {
   onNavigateToTransactions?: (filter: { fromDate?: string; toDate?: string }) => void;
+  onNavigateToResolution?: () => void;
 }
 
-export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
+export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }: TonightPageProps) {
   const [transactions, setTransactions] = useState<RawSmsLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -657,10 +658,10 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
                   </p>
                 </div>
                 <button
-                  onClick={() => onNavigateToTransactions?.({ fromDate: todayString, toDate: todayString })}
+                  onClick={() => onNavigateToResolution?.()}
                   className="text-sm font-bold text-primary hover:underline flex items-center gap-1"
                 >
-                  View All <ChevronRight className="w-4 h-4" />
+                  Resolve Inbox <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -875,21 +876,6 @@ export function TonightPage({ onNavigateToTransactions }: TonightPageProps) {
 
           </div>
         </div>
-
-        {/* User Resolution Center (Inbox for unverified SMS) */}
-        {!isSubmitted && (
-          <UserResolutionCenter 
-            unverifiedTransactions={unverifiedTxs}
-            onResolve={(updatedTx) => {
-              // Update local state instantly and mark as reviewed
-              const finalTx = { ...updatedTx, isReviewed: true };
-              setTransactions(prev => prev.map(t => t.id === finalTx.id ? finalTx : t));
-              if (finalTx.category) {
-                handleCategoryChange(finalTx.id, finalTx.category);
-              }
-            }}
-          />
-        )}
         
         </>
         )}

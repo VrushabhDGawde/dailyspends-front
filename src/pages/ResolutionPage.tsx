@@ -24,14 +24,28 @@ export function ResolutionPage() {
   };
 
   const unverifiedTxs = useMemo(() => {
-    return transactions.filter(t => !t.isReviewed && t.transactionType === 'DEBIT');
+    // Only show TODAY's unverified transactions in this list. 
+    // Older ones are auto-approved at midnight.
+    const todayStr = new Date().toISOString().split('T')[0];
+    return transactions.filter(t => 
+      !t.isReviewed && 
+      t.transactionType === 'DEBIT' && 
+      t.receivedAt.startsWith(todayStr)
+    );
   }, [transactions]);
 
   const handleResolve = (updatedTx: RawSmsLog) => {
     const finalTx = { ...updatedTx, isReviewed: true };
     setTransactions(prev => prev.map(t => t.id === finalTx.id ? finalTx : t));
-    
     // In a real app, you would make an API call here to save the updated transaction to the backend
+  };
+
+  const handleApproveAll = () => {
+    const idsToApprove = new Set(unverifiedTxs.map(t => t.id));
+    setTransactions(prev => prev.map(t => 
+      idsToApprove.has(t.id) ? { ...t, isReviewed: true } : t
+    ));
+    // API call to batch approve would go here
   };
 
   return (
@@ -53,6 +67,7 @@ export function ResolutionPage() {
         <UserResolutionCenter 
           unverifiedTransactions={unverifiedTxs}
           onResolve={handleResolve}
+          onApproveAll={handleApproveAll}
         />
       )}
     </div>

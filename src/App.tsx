@@ -33,7 +33,12 @@ function App() {
     const loadUnverifiedCount = async () => {
       try {
         const data = await fetchTransactions();
-        const unverified = data.filter(t => !t.isReviewed && t.transactionType === 'DEBIT').length;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const unverified = data.filter(t => 
+          !t.isReviewed && 
+          t.transactionType === 'DEBIT' &&
+          t.receivedAt.startsWith(todayStr)
+        ).length;
         setUnverifiedCount(unverified);
       } catch (error) {
         console.error("Failed to fetch global unverified count:", error);
@@ -105,10 +110,13 @@ function App() {
         
         <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
           {currentPage === 'tonight' && (
-            <TonightPage onNavigateToTransactions={(filter) => {
-              setTxFilterState(filter);
-              setCurrentPage('transactions');
-            }} />
+            <TonightPage 
+              onNavigateToTransactions={(filter) => {
+                setTxFilterState(filter);
+                setCurrentPage('transactions');
+              }} 
+              onNavigateToResolution={() => setCurrentPage('resolution')}
+            />
           )}
           {currentPage === 'transactions' && (
             <TransactionsPage 
