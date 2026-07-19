@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { Sidebar } from './components/Navbar'; 
 import { AuthModal } from './components/AuthModal';
+import { SupportModal } from './components/SupportModal';
 import { TonightPage } from './pages/TonightPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { InsightsPage } from './pages/InsightsPage';
@@ -13,6 +14,7 @@ import { fetchTransactions } from './services/api';
 
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('tonight');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [txFilterState, setTxFilterState] = useState<{fromDate?: string, toDate?: string} | null>(null);
@@ -37,7 +39,8 @@ function App() {
         const unverified = data.filter(t => 
           !t.isReviewed && 
           t.transactionType === 'DEBIT' &&
-          t.receivedAt.startsWith(todayStr)
+          t.sender !== 'MANUAL' &&
+          t.receivedAt && t.receivedAt.startsWith(todayStr)
         ).length;
         setUnverifiedCount(unverified);
       } catch (error) {
@@ -99,6 +102,7 @@ function App() {
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           isDark={isDark}
           toggleTheme={toggleTheme}
+          onOpenSupport={() => setIsSupportModalOpen(true)}
           isDemoMode={isDemoMode}
           onExitDemo={() => {
             setIsDemoMode(false);
@@ -107,6 +111,7 @@ function App() {
           unverifiedCount={unverifiedCount}
         />
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+        <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
         
         <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
           {currentPage === 'tonight' && (
@@ -130,6 +135,7 @@ function App() {
             <SettingsPage 
               isDark={isDark} toggleTheme={toggleTheme}
               reduceMotion={reduceMotion} toggleMotion={toggleMotion}
+              onOpenSupport={() => setIsSupportModalOpen(true)}
             />
           )}
         </main>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { fetchTransactions, type RawSmsLog } from '../services/api';
+import { fetchTransactions, updateTransaction, type RawSmsLog } from '../services/api';
 import { UserResolutionCenter } from '../components/UserResolutionCenter';
 
 export function ResolutionPage() {
@@ -30,22 +30,37 @@ export function ResolutionPage() {
     return transactions.filter(t => 
       !t.isReviewed && 
       t.transactionType === 'DEBIT' && 
-      t.receivedAt.startsWith(todayStr)
+      t.sender !== 'MANUAL' &&
+      t.receivedAt && t.receivedAt.startsWith(todayStr)
     );
   }, [transactions]);
 
-  const handleResolve = (updatedTx: RawSmsLog) => {
+  const handleResolve = async (updatedTx: RawSmsLog) => {
     const finalTx = { ...updatedTx, isReviewed: true };
     setTransactions(prev => prev.map(t => t.id === finalTx.id ? finalTx : t));
-    // In a real app, you would make an API call here to save the updated transaction to the backend
+    
+    try {
+      await updateTransaction(finalTx.id, finalTx);
+    } catch (error) {
+      console.error("Failed to save resolved transaction:", error);
+      alert("Failed to save resolution. Please try again.");
+    }
   };
 
-  const handleApproveAll = () => {
+  const handleApproveAll = async () => {
     const idsToApprove = new Set(unverifiedTxs.map(t => t.id));
     setTransactions(prev => prev.map(t => 
       idsToApprove.has(t.id) ? { ...t, isReviewed: true } : t
     ));
-    // API call to batch approve would go here
+    
+    try {
+      await Promise.all(unverifiedTxs.map(t => 
+        updateTransaction(t.id, { ...t, isReviewed: true })
+      ));
+    } catch (error) {
+      console.error("Failed to approve all transactions:", error);
+      alert("Some transactions failed to save. Please refresh and try again.");
+    }
   };
 
   return (

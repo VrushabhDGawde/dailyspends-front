@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home, LogOut, Inbox } from 'lucide-react';
+import { Moon, Sun, Settings, User, PanelLeftClose, PanelLeftOpen, CalendarDays, Sparkles, Home, LogOut, Inbox, HelpCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NAV_ITEMS = [
@@ -18,12 +18,13 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   isDark: boolean;
   toggleTheme: () => void;
+  onOpenSupport?: () => void;
   isDemoMode?: boolean;
   onExitDemo?: () => void;
   unverifiedCount?: number;
 }
 
-export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, isDemoMode, onExitDemo, unverifiedCount = 0 }: SidebarProps) {
+export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onToggleCollapse, isDark, toggleTheme, onOpenSupport, isDemoMode, onExitDemo, unverifiedCount = 0 }: SidebarProps) {
   const { user, isAuthenticated, logout } = useAuth();
   
   return (
@@ -104,6 +105,14 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
               className="w-9 h-9 rounded-full flex items-center justify-center text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+
+            <button 
+              onClick={onOpenSupport}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-indigo-500 hover:bg-indigo-500/10 transition-colors"
+              title="Help & Support"
+            >
+              <HelpCircle className="w-5 h-5" />
             </button>
 
             <button 

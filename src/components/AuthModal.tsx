@@ -28,7 +28,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       if (isLogin) {
         const response = await authApi.login({ email, password });
-        login(response.accessToken);
+        login(response.accessToken, response.refreshToken);
         onClose();
       } else {
         await authApi.register({ fullName, email, password });

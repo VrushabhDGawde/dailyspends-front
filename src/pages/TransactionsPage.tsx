@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUpDown, RefreshCw, ArrowDownRight, ArrowUpRight, Edit3, Check, X, Calendar as CalendarIcon, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
-import { fetchTransactions, type RawSmsLog } from '../services/api';
+import { Search, ArrowUpDown, RefreshCw, ArrowDownRight, ArrowUpRight, Edit3, Check, X, Calendar as CalendarIcon, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { fetchTransactions, deleteTransaction, type RawSmsLog } from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { PieChart as PieChartIcon, List as ListIcon } from 'lucide-react';
@@ -46,6 +46,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
 
   // Edit State
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deletingTxId, setDeletingTxId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ amount: 0, merchant: '', category: '' });
 
   // Pagination State
@@ -58,9 +59,22 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
       const data = await fetchTransactions();
       setTransactions(data);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load transactions:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingTxId) return;
+    try {
+      await deleteTransaction(deletingTxId);
+      setTransactions(prev => prev.filter(t => t.id !== deletingTxId));
+      if (editingId === deletingTxId) setEditingId(null);
+      setDeletingTxId(null);
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
+      alert("Failed to delete transaction. Please try again.");
     }
   };
 
@@ -573,13 +587,22 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
                               </button>
                             </div>
                           ) : (
-                            <button 
-                              onClick={() => startEdit(tx)}
-                              className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-                              title="Edit Transaction"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button 
+                                onClick={() => startEdit(tx)}
+                                className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
+                                title="Edit Transaction"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTxId(tx.id); }}
+                                className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                                title="Delete Transaction"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -741,6 +764,38 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
         )}
 
       </div>
+
+      <AnimatePresence>
+        {deletingTxId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-background border border-border shadow-2xl rounded-2xl p-6 max-w-sm w-full"
+            >
+              <h3 className="text-xl font-bold mb-2">Delete Transaction?</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                Are you sure you want to delete this transaction? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeletingTxId(null)}
+                  className="px-4 py-2 rounded-xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

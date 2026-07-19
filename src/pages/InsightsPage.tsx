@@ -47,10 +47,13 @@ export function InsightsPage() {
   };
 
   // Time calculations
-  const today = new Date();
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-  const currentDay = today.getDate();
-  const daysLeft = daysInMonth - currentDay + 1;
+  const { today, daysInMonth, currentDay, daysLeft } = useMemo(() => {
+    const t = new Date();
+    const dim = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    const cd = t.getDate();
+    const dl = dim - cd + 1;
+    return { today: t, daysInMonth: dim, currentDay: cd, daysLeft: dl };
+  }, []);
 
   // Spend calculations
   const { totalSpent, totalIncome, categories, avgPerDay, daysWithSpending } = useMemo(() => {

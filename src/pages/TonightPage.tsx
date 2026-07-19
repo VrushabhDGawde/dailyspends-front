@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchTransactions, addTransaction, type RawSmsLog } from '../services/api';
+import { fetchTransactions, addTransaction, deleteTransaction, type RawSmsLog } from '../services/api';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { 
   RefreshCw, CheckCircle2, Coffee, ShoppingBag, 
@@ -8,8 +8,8 @@ import {
   Sparkles, PartyPopper, Edit3, ArrowUpRight, 
   Utensils, Clapperboard, MoreHorizontal, Plus, X, Wallet, 
   AlertTriangle,
-  Clock, CalendarDays, Grid, ChevronRight, List, ArrowDownRight,
-  Target, PieChart, Check
+  CalendarDays, ChevronRight, List,
+  Target, PieChart, Check, Trash2
 } from 'lucide-react';
 import { TransactionReviewModal } from '../components/TransactionReviewModal';
 import { UserResolutionCenter } from '../components/UserResolutionCenter';
@@ -90,6 +90,7 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
   const [quickAddMerchant, setQuickAddMerchant] = useState('');
   const [quickAddCategory, setQuickAddCategory] = useState('Food & Dining');
   const [quickAddPaymentMode, setQuickAddPaymentMode] = useState('UPI');
+  const [deletingTxId, setDeletingTxId] = useState<number | null>(null);
 
   // --- CALENDAR STATE ---
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
@@ -121,17 +122,6 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
 
   
   // --- CALENDAR MEMOS ---
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const now = new Date();
-    for (let i = 0; i < 6; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      options.push({ value: val, label });
-    }
-    return options;
-  }, []);
 
   const daySummaries = useMemo(() => {
     const grouped: Record<string, RawSmsLog[]> = {};
@@ -182,9 +172,7 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     return daySummaries.reduce((sum, d) => sum + d.totalSpent, 0);
   }, [daySummaries]);
 
-  const monthlyIncome = useMemo(() => {
-    return daySummaries.reduce((sum, d) => sum + d.totalIncome, 0);
-  }, [daySummaries]);
+
 
   const calendarGrid = useMemo(() => {
     const [yearStr, monthStr] = selectedMonth.split('-');
@@ -208,7 +196,7 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     return daySummaries.find(s => s.date === selectedCalendarDate) || null;
   }, [daySummaries, selectedCalendarDate]);
 
-  const todayString = new Date().toISOString().split('T')[0];
+  const todayString = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const todayTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -220,7 +208,6 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
   // Calculate stats
   const { totalSpent, categoryBreakdown, yesterdaySpent } = useMemo(() => {
     let spent = 0;
-    let income = 0;
     const cats: Record<string, number> = {};
 
     todayTransactions.forEach(t => {
@@ -228,8 +215,6 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
       if (t.transactionType === 'DEBIT') {
         spent += t.amount || 0;
         cats[category] = (cats[category] || 0) + (t.amount || 0);
-      } else {
-        income += t.amount || 0;
       }
     });
 
@@ -248,15 +233,11 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount);
 
-    return { totalSpent: spent, totalIncome: income, categoryBreakdown: sortedCats, yesterdaySpent: ySpent };
+    return { totalSpent: spent, categoryBreakdown: sortedCats, yesterdaySpent: ySpent };
   }, [todayTransactions, transactions, categoryOverrides]);
 
   const diff = totalSpent - yesterdaySpent;
   const isHigher = diff > 0;
-
-  const unverifiedTxs = useMemo(() => {
-    return todayTransactions.filter(t => !t.isReviewed && t.transactionType === 'DEBIT');
-  }, [todayTransactions]);
 
   // Daily Limit Calculations
   const daysInMonth = useMemo(() => {
@@ -337,15 +318,37 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
       upiRef: ""
     };
 
-    await addTransaction(newTx);
-    setTransactions(prev => [newTx, ...prev]);
-    
-    // Reset Form
-    setQuickAddAmount('');
-    setQuickAddMerchant('');
+    try {
+      await addTransaction(newTx);
+      setTransactions(prev => [newTx, ...prev]);
+      
+      // Reset Form
+      setQuickAddAmount('');
+      setQuickAddMerchant('');
+      setIsQuickAddOpen(false);
+    } catch (err: any) {
+      if (err.message === 'unauthorized') {
+        alert("Your session has expired. Please log out and log in again.");
+      } else {
+        alert("Failed to add transaction. Please check your connection.");
+      }
+    }
     setQuickAddCategory('Food & Dining');
     setQuickAddPaymentMode('UPI');
     setIsQuickAddOpen(false);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingTxId) return;
+    
+    try {
+      await deleteTransaction(deletingTxId);
+      setTransactions(prev => prev.filter(t => t.id !== deletingTxId));
+      setDeletingTxId(null);
+    } catch (error) {
+      console.error("Failed to delete transaction:", error);
+      alert("Failed to delete transaction. Please try again.");
+    }
   };
 
   const handleSubmit = () => {
@@ -687,9 +690,16 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                         className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 border border-transparent hover:border-primary/50 transition-all gap-4 cursor-pointer"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center flex-shrink-0">
-                            <Utensils className="w-5 h-5" />
-                          </div>
+                          {(() => {
+                            const catName = categoryOverrides[tx.id] || tx.category || 'Other';
+                            const CatIcon = CATEGORY_ICONS[catName] || MoreHorizontal;
+                            const catColorClass = CATEGORY_COLORS[catName] || CATEGORY_COLORS['Other'];
+                            return (
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${catColorClass}`}>
+                                <CatIcon className="w-5 h-5" />
+                              </div>
+                            );
+                          })()}
                           <div>
                             <h3 className="font-bold text-foreground line-clamp-1">{tx.merchantClean || tx.merchantRaw}</h3>
                             <div className="flex items-center gap-2 mt-1">
@@ -703,13 +713,22 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex items-center justify-between sm:block">
-                          <p className="font-black text-lg text-foreground tracking-tight tabular-nums">
-                            -₹{(tx.amount || 0).toLocaleString('en-IN')}
-                          </p>
-                          <p className="text-xs text-muted-foreground/70 font-medium mt-0.5">
-                            {new Date(tx.transactionDate || tx.receivedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                        <div className="text-right flex items-center justify-between sm:justify-end sm:gap-4 mt-2 sm:mt-0">
+                          <div>
+                            <p className="font-black text-lg text-foreground tracking-tight tabular-nums">
+                              -₹{(tx.amount || 0).toLocaleString('en-IN')}
+                            </p>
+                            <p className="text-xs text-muted-foreground/70 font-medium mt-0.5">
+                              {new Date(tx.transactionDate || tx.receivedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTxId(tx.id); }}
+                            className="p-2 text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors ml-4 sm:ml-0"
+                            title="Delete transaction"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </motion.div>
                     );
@@ -757,15 +776,24 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                   onChange={e => setSelectedMonth(e.target.value)}
                   className="bg-white/50 dark:bg-black/20 border border-border rounded-lg px-3 py-1.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-shadow cursor-pointer"
                 >
-                  {Array.from(new Set(daySummaries.map(s => s.date.substring(0, 7)))).map(m => {
-                    const [y, mo] = m.split('-');
-                    const date = new Date(Number(y), Number(mo)-1, 1);
-                    return (
-                      <option key={m} value={m}>
-                        {date.toLocaleString('default', { month: 'short', year: 'numeric' })}
-                      </option>
-                    );
-                  })}
+                  {(() => {
+                    const options = [];
+                    const now = new Date();
+                    for (let i = 0; i < 6; i++) {
+                      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                      options.push(val);
+                    }
+                    return options.map(m => {
+                      const [y, mo] = m.split('-');
+                      const date = new Date(Number(y), Number(mo) - 1, 1);
+                      return (
+                        <option key={m} value={m}>
+                          {date.toLocaleString('default', { month: 'short', year: 'numeric' })}
+                        </option>
+                      );
+                    });
+                  })()}
                 </select>
               </div>
 
@@ -836,12 +864,29 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                         </span>
                       </div>
                       <div className="space-y-2">
-                        {selectedCalendarDayData.transactions.slice(0, 3).map(tx => (
-                          <div key={tx.id} className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground truncate pr-2">{tx.merchantClean || tx.merchantRaw}</span>
-                            <span className="font-bold tabular-nums">₹{tx.amount?.toLocaleString('en-IN')}</span>
+                        {selectedCalendarDayData.transactions.slice(0, 3).map(tx => {
+                          const currentCategory = categoryOverrides[tx.id] || tx.category || 'Other';
+                          return (
+                          <div key={tx.id} className="flex justify-between items-center text-xs group/tx hover:bg-black/5 dark:hover:bg-white/5 p-2 -mx-2 rounded-lg cursor-pointer transition-colors" onClick={() => setReviewingTx(tx)}>
+                            <div className="flex items-center gap-3 w-1/2">
+                              <span className="truncate">{tx.merchantClean || tx.merchantRaw}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-black/5 dark:bg-white/10 text-muted-foreground hidden sm:inline-block">
+                                {currentCategory}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="font-bold text-foreground">-₹{(tx.amount || 0).toLocaleString('en-IN')}</span>
+                              <button
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTxId(tx.id); }}
+                                className="opacity-0 group-hover/tx:opacity-100 p-1 text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                                title="Delete transaction"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                         {selectedCalendarDayData.transactions.length > 3 && (
                           <div className="text-center pt-2">
                             <span className="text-[10px] uppercase font-bold tracking-widest text-primary cursor-pointer hover:underline">
@@ -989,6 +1034,38 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
           setReviewingTx(null);
         }}
       />
+
+      <AnimatePresence>
+        {deletingTxId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-background border border-border shadow-2xl rounded-2xl p-6 max-w-sm w-full"
+            >
+              <h3 className="text-xl font-bold mb-2">Delete Transaction?</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                Are you sure you want to delete this transaction? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeletingTxId(null)}
+                  className="px-4 py-2 rounded-xl font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

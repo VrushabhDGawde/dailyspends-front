@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 interface Props {
   onLoginSuccess: () => void;
@@ -12,20 +13,38 @@ export function AdminLogin({ onLoginSuccess }: Props) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (username === 'admin' && password === 'admin') {
-        localStorage.setItem('spendsense_admin_token', 'mock_admin_token_xyz');
+    try {
+      // Map 'admin' to 'admin@dailyspends.com' if user typed 'admin'
+      const email = username.trim() === 'admin' ? 'admin@dailyspends.com' : username.trim();
+      const response = await axios.post('/api/v1/auth/login', {
+        email: email,
+        password: password,
+      });
+
+      if (response.data && response.data.accessToken) {
+        localStorage.setItem('spendsense_admin_token', response.data.accessToken);
+        if (response.data.refreshToken) {
+          localStorage.setItem('spendsense_admin_refresh_token', response.data.refreshToken);
+        }
         onLoginSuccess();
       } else {
-        setError('Invalid admin credentials. Hint: use admin/admin');
-        setIsLoading(false);
+        setError('Login failed: Invalid response from server');
       }
-    }, 800); // simulate network delay
+    } catch (err: any) {
+      console.error('Admin login error:', err);
+      if (err.response?.status === 401 || err.response?.status === 400) {
+        setError('Invalid admin credentials. Use admin / admin or admin@dailyspends.com / admin');
+      } else {
+        setError('Connection error. Ensure backend service is running.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

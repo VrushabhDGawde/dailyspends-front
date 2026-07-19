@@ -38,11 +38,6 @@ export function AdminApp() {
         {currentTab === 'users' && <AdminDashboard />} {/* Reusing dashboard for users tab for now */}
         {currentTab === 'rules' && <AdminRulesEngine />}
         {currentTab === 'complaints' && <AdminComplaints />}
-        {currentTab === 'settings' && (
-          <div className="p-8 flex items-center justify-center h-full text-zinc-500">
-            Platform Settings Module (Coming Soon)
-          </div>
-        )}
       </main>
     </div>
   );

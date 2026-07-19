@@ -9,7 +9,7 @@ interface AuthContextType {
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
-  login: (token: string) => void;
+  login: (token: string, refreshToken?: string) => void;
   logout: () => void;
 }
 
@@ -45,11 +45,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setIsInitialized(true);
+    
+    // Listen for automatic logouts triggered by the apiClient
+    const handleLogout = () => logout();
+    window.addEventListener('spendsense_logout', handleLogout);
+    
+    return () => {
+      window.removeEventListener('spendsense_logout', handleLogout);
+    };
   }, []);
 
-  const login = (newToken: string) => {
+  const login = (newToken: string, newRefreshToken?: string) => {
     setToken(newToken);
     localStorage.setItem('spendsense_auth_token', newToken);
+    if (newRefreshToken) {
+      localStorage.setItem('spendsense_refresh_token', newRefreshToken);
+    }
     const decoded = parseJwt(newToken);
     if (decoded && decoded.sub) {
       setUser({ email: decoded.sub, name: decoded.name });
@@ -60,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     localStorage.removeItem('spendsense_auth_token');
+    localStorage.removeItem('spendsense_refresh_token');
+    localStorage.removeItem('spendsense_token'); // Clear legacy tokens if any
   };
 
   if (!isInitialized) return null; // Avoid flashing unauthenticated state

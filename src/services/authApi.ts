@@ -58,5 +58,14 @@ export const authApi = {
       body: JSON.stringify(data),
     });
     return handleResponse<AuthResponse>(response);
+  },
+
+  async refreshToken(refreshToken: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_URL}/refresh-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    return handleResponse<AuthResponse>(response);
   }
 };

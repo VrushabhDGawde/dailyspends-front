@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Palette, Shield, Download, Trash2, Camera, Moon, Sun, Monitor, PlaySquare } from 'lucide-react';
+import { User, Palette, Shield, Download, Trash2, Camera, Moon, Sun, Monitor, PlaySquare, HelpCircle } from 'lucide-react';
 
 interface SettingsPageProps {
   isDark: boolean;
   toggleTheme: () => void;
   reduceMotion: boolean;
   toggleMotion: () => void;
+  onOpenSupport?: () => void;
 }
 
-export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion }: SettingsPageProps) {
+export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, onOpenSupport }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'data'>('profile');
 
   // Mock Profile State
@@ -50,6 +51,14 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion }
             >
               <Shield className="w-4 h-4" /> Data & Privacy
             </button>
+            {onOpenSupport && (
+              <button
+                onClick={onOpenSupport}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/20 mt-4"
+              >
+                <HelpCircle className="w-4 h-4" /> Help & Support
+              </button>
+            )}
           </div>
 
           {/* Settings Content Area */}

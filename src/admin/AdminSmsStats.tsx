@@ -138,7 +138,7 @@ export function AdminSmsStats() {
                   tickFormatter={(val) => `₹${val/1000}k`}
                 />
                 <RechartsTooltip 
-                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Volume']}
+                  formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Volume']}
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', color: '#fff' }}
                   itemStyle={{ fontWeight: 'bold' }}
                 />
@@ -239,7 +239,7 @@ export function AdminSmsStats() {
                 />
                 <RechartsTooltip 
                   cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                  formatter={(value: number) => [value.toLocaleString(), 'Messages']}
+                  formatter={(value: any) => [value.toLocaleString(), 'Messages']}
                   contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1rem', color: '#fff' }}
                 />
                 <Bar dataKey="value" fill="#ef4444" radius={[0, 8, 8, 0]} barSize={24} />

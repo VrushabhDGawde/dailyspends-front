@@ -1,3 +1,5 @@
+import apiClient from './apiClient';
+
 export interface RawSmsLog {
   // Add a comment to trigger Vite cache invalidation
   id: number;
@@ -19,34 +21,33 @@ export interface RawSmsLog {
   isReviewed?: boolean;
 }
 
-const API_BASE_URL = '/api/v1/transactions';
+const API_BASE_URL = '/transactions';
 
 export async function fetchTransactions(): Promise<RawSmsLog[]> {
   try {
     const token = localStorage.getItem('spendsense_auth_token');
-    const response = await fetch(API_BASE_URL, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {}
-    });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Attempt backend fetch via apiClient (which handles tokens and retries)
+    if (token) {
+        const response = await apiClient.get(API_BASE_URL);
+        return response.data;
+    } else {
+        return getMockData();
     }
-    return await response.json();
   } catch (error) {
-    console.warn("Backend transactions not ready. Falling back to local/demo data.");
-    
     const token = localStorage.getItem('spendsense_auth_token');
     if (token) {
+      console.warn("Backend transactions failed. Falling back to local data.", error);
       // Production Grade: Real user gets their own local DB instead of demo data
       const localData = localStorage.getItem('spendsense_user_transactions');
       if (localData) {
         return JSON.parse(localData);
       }
       return []; // Return clean empty state
-    } else {
-      // Demo Mode
-      return getMockData();
     }
+    
+    // Demo Mode
+    return getMockData();
   }
 }
 
@@ -56,26 +57,28 @@ export async function addTransaction(tx: RawSmsLog): Promise<void> {
   const token = localStorage.getItem('spendsense_auth_token');
   
   if (token) {
-    // Send directly to the backend
-    const response = await fetch(`${API_BASE_URL}/manual`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(tx)
-    });
+    try {
+      await apiClient.post(`${API_BASE_URL}/manual`, tx);
+    } catch (err: any) {
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        throw new Error("unauthorized");
+      }
+      throw new Error(`HTTP error! status: ${err.response?.status || 'Unknown'}`);
+    }
+  }
+}
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-  } else {
-    // Demo Mode logic
-    if (!cachedMockData) {
-      cachedMockData = getMockData();
-    }
-    tx.id = Date.now();
-    cachedMockData = [tx, ...cachedMockData];
+export async function updateTransaction(id: number, tx: Partial<RawSmsLog>): Promise<void> {
+  const token = localStorage.getItem('spendsense_auth_token');
+  if (token) {
+    await apiClient.put(`${API_BASE_URL}/${id}`, tx);
+  }
+}
+
+export async function deleteTransaction(id: number): Promise<void> {
+  const token = localStorage.getItem('spendsense_auth_token');
+  if (token) {
+    await apiClient.delete(`${API_BASE_URL}/${id}`);
   }
 }
 
