@@ -82,7 +82,7 @@ export function CustomDatePicker({ value, onChange, placeholder = "Select date",
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 mt-2 top-[120%] left-1/2 -translate-x-1/2 md:-translate-x-0 md:left-0 glass !bg-white/80 dark:!bg-black/60 border border-white/40 dark:border-white/10 rounded-[1.5rem] p-4 shadow-2xl w-[280px]"
+            className="absolute z-50 mt-2 top-[120%] left-1/2 -translate-x-1/2 md:-translate-x-0 md:left-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-2xl border border-white/30 dark:border-white/15 rounded-[1.5rem] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] w-[280px]"
           >
             <div className="flex items-center justify-between mb-4 px-2">
               <button type="button" onClick={handlePrevMonth} className="h-7 w-7 bg-transparent opacity-50 hover:opacity-100 flex items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5">

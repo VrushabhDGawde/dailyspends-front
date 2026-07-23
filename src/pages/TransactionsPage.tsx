@@ -28,6 +28,13 @@ interface TransactionsPageProps {
   onFilterConsumed?: () => void;
 }
 
+const getFirstDayOfCurrentMonth = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}-01`;
+};
+
 export function TransactionsPage({ initialFilter, onFilterConsumed }: TransactionsPageProps) {
   const [transactions, setTransactions] = useState<RawSmsLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +43,7 @@ export function TransactionsPage({ initialFilter, onFilterConsumed }: Transactio
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [typeFilter, setTypeFilter] = useState('ALL');
-  const [fromDate, setFromDate] = useState('');
+  const [fromDate, setFromDate] = useState(getFirstDayOfCurrentMonth);
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Sort & View

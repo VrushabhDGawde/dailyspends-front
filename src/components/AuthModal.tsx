@@ -31,9 +31,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         login(response.accessToken, response.refreshToken);
         onClose();
       } else {
+        localStorage.removeItem('spendsense_user_profile');
+        localStorage.removeItem('monthlyBudget');
+        localStorage.removeItem('savingsPercentage');
         await authApi.register({ fullName, email, password });
-        setIsLogin(true);
-        setError('Account created successfully! Please sign in.');
+        // Auto sign-in right after registration to launch onboarding
+        try {
+          const loginRes = await authApi.login({ email, password });
+          login(loginRes.accessToken, loginRes.refreshToken);
+          onClose();
+        } catch {
+          setIsLogin(true);
+          setError('Account created successfully! Please sign in.');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed');

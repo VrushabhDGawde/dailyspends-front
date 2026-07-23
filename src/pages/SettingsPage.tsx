@@ -21,8 +21,24 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, 
   const [email, setEmail] = useState(user?.email || '');
   const [salary, setSalary] = useState(user?.salary != null ? String(user.salary) : '');
   const [savingsPercentage, setSavingsPercentage] = useState(user?.savingsPercentage || 0);
+  const [dob, setDob] = useState(user?.dob || '');
+  const [occupation, setOccupation] = useState(user?.occupation || 'Software Engineer / IT Professional');
   const [currency, setCurrency] = useState('INR (₹)');
   const [isSaving, setIsSaving] = useState(false);
+
+  const OCCUPATIONS = [
+    'Software Engineer / IT Professional',
+    'Business Owner / Entrepreneur',
+    'Finance & Banking Specialist',
+    'Healthcare & Medical Professional',
+    'Creative / Designer / Artist',
+    'Education & Academician',
+    'Sales & Marketing Executive',
+    'Freelancer / Consultant',
+    'Student',
+    'Government Employee',
+    'Other'
+  ];
 
   // Sync state if user context updates after mount
   React.useEffect(() => {
@@ -31,6 +47,8 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, 
       setEmail(user.email || '');
       setSalary(user.salary != null ? String(user.salary) : '');
       setSavingsPercentage(user?.savingsPercentage || 0);
+      if (user.dob) setDob(user.dob);
+      if (user.occupation) setOccupation(user.occupation);
     }
   }, [user]);
 
@@ -41,7 +59,9 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, 
       await updateUserProfile({
         fullName: name,
         salary: parsedSalary,
-        savingsPercentage: savingsPercentage
+        savingsPercentage: savingsPercentage,
+        dob: dob,
+        occupation: occupation
       });
       await refreshProfile();
       alert("Profile updated successfully!");
@@ -136,6 +156,30 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, 
                         type="email" value={email} disabled
                         className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm opacity-50 cursor-not-allowed font-medium"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Date of Birth</label>
+                      <input
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={dob}
+                        onChange={(e) => setDob(e.target.value)}
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all cursor-pointer font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Occupation / Profession</label>
+                      <select
+                        value={occupation}
+                        onChange={(e) => setOccupation(e.target.value)}
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none cursor-pointer font-medium"
+                      >
+                        {OCCUPATIONS.map((occ) => (
+                          <option key={occ} value={occ} className="bg-background text-foreground">
+                            {occ}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Default Currency</label>

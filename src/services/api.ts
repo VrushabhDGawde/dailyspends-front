@@ -68,10 +68,53 @@ export async function addTransaction(tx: RawSmsLog): Promise<void> {
   }
 }
 
+export function isUnverifiedSms(t: RawSmsLog, todayStr: string): boolean {
+  if (!t) return false;
+  // 1. Must be an SMS transaction (has body and non-MANUAL sender)
+  if (!t.smsBody || t.smsBody.trim() === '' || t.sender === 'MANUAL') {
+    return false;
+  }
+  // 2. Must NOT be reviewed
+  if (t.isReviewed === true || t.isReviewed === (1 as any) || String(t.isReviewed) === 'true') {
+    return false;
+  }
+  // 3. Must be DEBIT
+  if (t.transactionType !== 'DEBIT') {
+    return false;
+  }
+  // 4. Must be received today
+  const dateStr = (t.receivedAt || t.transactionDate || '').split('T')[0];
+  if (dateStr !== todayStr) {
+    return false;
+  }
+  return true;
+}
+
 export async function updateTransaction(id: number, tx: Partial<RawSmsLog>): Promise<void> {
   const token = localStorage.getItem('spendsense_auth_token');
   if (token) {
-    await apiClient.put(`${API_BASE_URL}/${id}`, tx);
+    try {
+      await apiClient.put(`${API_BASE_URL}/${id}`, tx);
+    } catch (e) {
+      console.warn("Backend update failed, falling back to local state", e);
+    }
+  }
+
+  // Update in-memory cachedMockData if present
+  if (cachedMockData) {
+    cachedMockData = cachedMockData.map(t => t.id === id ? { ...t, ...tx } : t);
+  }
+
+  // Update localStorage if present
+  const localDataStr = localStorage.getItem('spendsense_user_transactions');
+  if (localDataStr) {
+    try {
+      const localTxs: RawSmsLog[] = JSON.parse(localDataStr);
+      const updated = localTxs.map(t => t.id === id ? { ...t, ...tx } : t);
+      localStorage.setItem('spendsense_user_transactions', JSON.stringify(updated));
+    } catch (e) {
+      console.error("Failed to update local storage transaction", e);
+    }
   }
 }
 

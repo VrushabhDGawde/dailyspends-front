@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { fetchTransactions, updateTransaction, type RawSmsLog } from '../services/api';
+import { fetchTransactions, updateTransaction, isUnverifiedSms, type RawSmsLog } from '../services/api';
 import { UserResolutionCenter } from '../components/UserResolutionCenter';
 
-export function ResolutionPage() {
+interface ResolutionPageProps {
+  onCountChange?: (count: number) => void;
+}
+
+export function ResolutionPage({ onCountChange }: ResolutionPageProps) {
   const [transactions, setTransactions] = useState<RawSmsLog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,16 +28,16 @@ export function ResolutionPage() {
   };
 
   const unverifiedTxs = useMemo(() => {
-    // Only show TODAY's unverified transactions in this list. 
-    // Older ones are auto-approved at midnight.
     const todayStr = new Date().toISOString().split('T')[0];
-    return transactions.filter(t => 
-      !t.isReviewed && 
-      t.transactionType === 'DEBIT' && 
-      t.sender !== 'MANUAL' &&
-      t.receivedAt && t.receivedAt.startsWith(todayStr)
-    );
+    return transactions.filter(t => isUnverifiedSms(t, todayStr));
   }, [transactions]);
+
+  // Keep parent unverifiedCount in sync whenever unverifiedTxs updates
+  useEffect(() => {
+    if (!loading) {
+      onCountChange?.(unverifiedTxs.length);
+    }
+  }, [unverifiedTxs, loading, onCountChange]);
 
   const handleResolve = async (updatedTx: RawSmsLog) => {
     const finalTx = { ...updatedTx, isReviewed: true };

@@ -37,12 +37,6 @@ export interface PageResponse<T> {
   number: number;
 }
 
-export interface PlatformSettingsDTO {
-  websiteTitle: string;
-  themeMode: string;
-  primaryColor: string;
-}
-
 export const adminApi = {
   // Fetch users with pagination
   fetchUsers: async (page = 0, size = 10): Promise<PageResponse<UserResponseDTO>> => {
@@ -66,15 +60,4 @@ export const adminApi = {
   deleteUser: async (id: number): Promise<void> => {
     await adminAxios.delete(`/users/${id}`);
   },
-
-  // Platform Settings
-  getSettings: async (): Promise<PlatformSettingsDTO> => {
-    const response = await axios.get('/api/settings'); // Public endpoint
-    return response.data;
-  },
-  
-  updateSettings: async (settings: PlatformSettingsDTO): Promise<PlatformSettingsDTO> => {
-    const response = await adminAxios.put('/settings', settings);
-    return response.data;
-  }
 };

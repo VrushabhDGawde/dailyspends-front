@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchTransactions, addTransaction, deleteTransaction, type RawSmsLog } from '../services/api';
+import { fetchTransactions, addTransaction, updateTransaction, deleteTransaction, type RawSmsLog } from '../services/api';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { 
   RefreshCw, CheckCircle2, Coffee, ShoppingBag, 
@@ -350,14 +350,38 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     }
   };
 
-  const handleSubmit = () => {
+  const handleQuickApprove = async (tx: RawSmsLog, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const updatedTx = { ...tx, isReviewed: true };
+    setTransactions(prev => prev.map(t => t.id === tx.id ? updatedTx : t));
+    try {
+      await updateTransaction(tx.id, { isReviewed: true });
+    } catch (err) {
+      console.error("Failed to approve transaction:", err);
+    }
+  };
+
+  const handleSubmit = async () => {
     setShowCelebration(true);
     setIsSubmitted(true);
     localStorage.setItem(`reviewed_${todayString}`, 'true');
-    console.log('Reviewed transactions:', todayTransactions.map(t => ({
-      ...t,
-      category: categoryOverrides[t.id] || t.category,
-    })));
+
+    // Mark all unreviewed SMS transactions for today as reviewed (approved as-is)
+    const unreviewedToday = todayTransactions.filter(t => 
+      !t.isReviewed && t.transactionType === 'DEBIT' && t.sender !== 'MANUAL' && t.smsBody
+    );
+
+    setTransactions(prev => prev.map(t => {
+      const isMatch = unreviewedToday.some(u => u.id === t.id);
+      return isMatch ? { ...t, isReviewed: true } : t;
+    }));
+
+    try {
+      await Promise.all(unreviewedToday.map(t => updateTransaction(t.id, { isReviewed: true })));
+    } catch (err) {
+      console.error("Failed to mark transactions as reviewed:", err);
+    }
+
     setTimeout(() => setShowCelebration(false), 3000);
   };
 
@@ -679,6 +703,8 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                 <div className="space-y-4">
                   {debitTransactions.map((tx) => {
                     const currentCategory = categoryOverrides[tx.id] || tx.category || 'Other';
+                    const isUnreviewed = !tx.isReviewed && tx.sender !== 'MANUAL' && tx.smsBody;
+
                     return (
                       <motion.div
                         key={tx.id}
@@ -686,7 +712,11 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         onClick={() => setReviewingTx(tx)}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 border border-transparent hover:border-primary/50 transition-all gap-4 cursor-pointer"
+                        className={`group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 cursor-pointer ${
+                          isUnreviewed 
+                            ? 'bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30' 
+                            : 'bg-white/50 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 border-transparent hover:border-primary/50'
+                        }`}
                       >
                         <div className="flex items-center gap-4">
                           {(() => {
@@ -700,7 +730,14 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                             );
                           })()}
                           <div>
-                            <h3 className="font-bold text-foreground line-clamp-1">{tx.merchantClean || tx.merchantRaw}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-foreground line-clamp-1">{tx.merchantClean || tx.merchantRaw}</h3>
+                              {isUnreviewed && (
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                  Review Needed
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center gap-2 mt-1">
                               <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-[10px] font-bold text-muted-foreground">
                                 {currentCategory}
@@ -712,7 +749,8 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                             </div>
                           </div>
                         </div>
-                        <div className="text-right flex items-center justify-between sm:justify-end sm:gap-4 mt-2 sm:mt-0">
+
+                        <div className="text-right flex items-center justify-between sm:justify-end sm:gap-3 mt-2 sm:mt-0">
                           <div>
                             <p className="font-black text-lg text-foreground tracking-tight tabular-nums">
                               -₹{(tx.amount || 0).toLocaleString('en-IN')}
@@ -721,13 +759,37 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
                               {new Date(tx.transactionDate || tx.receivedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
-                          <button
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTxId(tx.id); }}
-                            className="p-2 text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors ml-4 sm:ml-0"
-                            title="Delete transaction"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          {/* Action Buttons */}
+                          {isUnreviewed ? (
+                            <div className="flex items-center gap-1.5 ml-2" onClick={(e) => e.stopPropagation()}>
+                              {/* Direct Quick Approve Button (No table data changes) */}
+                              <button
+                                onClick={(e) => handleQuickApprove(tx, e)}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+                                title="Approve as-is without changing table data"
+                              >
+                                <Check className="w-3.5 h-3.5" /> Approve
+                              </button>
+
+                              {/* Resolve Button (Fix Imperfections in Resolution Center) */}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onNavigateToResolution?.(); }}
+                                className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shadow-sm"
+                                title="Go to Resolution Center to fix vendor or amount imperfections"
+                              >
+                                <AlertTriangle className="w-3.5 h-3.5" /> Resolve
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTxId(tx.id); }}
+                              className="p-2 text-muted-foreground/50 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors ml-4 sm:ml-0"
+                              title="Delete transaction"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     );

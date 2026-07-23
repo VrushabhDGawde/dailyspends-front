@@ -6,6 +6,9 @@ export interface User {
   name?: string;
   salary?: number;
   savingsPercentage?: number;
+  dob?: string;
+  occupation?: string;
+  isProfileComplete?: boolean;
 }
 
 interface AuthContextType {
@@ -41,7 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     try {
       const profile = await getUserProfile();
-      setUser(prev => prev ? { ...prev, name: profile.fullName, salary: profile.salary, savingsPercentage: profile.savingsPercentage } : { email: profile.email, name: profile.fullName, salary: profile.salary, savingsPercentage: profile.savingsPercentage });
+      setUser({
+        email: profile.email,
+        name: profile.fullName,
+        salary: profile.salary,
+        savingsPercentage: profile.savingsPercentage,
+        dob: profile.dob,
+        occupation: profile.occupation,
+        isProfileComplete: profile.isProfileComplete
+      });
     } catch (error) {
       console.warn("Failed to fetch user profile", error);
     }
@@ -101,6 +112,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const decoded = parseJwt(newToken);
     if (decoded && decoded.sub) {
+      const local = localStorage.getItem('spendsense_user_profile');
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (parsed.email && parsed.email !== decoded.sub) {
+            localStorage.removeItem('spendsense_user_profile');
+            localStorage.removeItem('monthlyBudget');
+            localStorage.removeItem('savingsPercentage');
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
       setUser({ email: decoded.sub, name: decoded.name });
       await refreshProfile();
     }
@@ -112,6 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('spendsense_auth_token');
     localStorage.removeItem('spendsense_refresh_token');
     localStorage.removeItem('spendsense_token');
+    localStorage.removeItem('spendsense_user_profile');
+    localStorage.removeItem('monthlyBudget');
+    localStorage.removeItem('savingsPercentage');
   };
 
   if (!isInitialized) return null; // Avoid flashing unauthenticated state

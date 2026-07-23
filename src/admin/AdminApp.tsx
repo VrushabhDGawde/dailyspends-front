@@ -10,11 +10,35 @@ export function AdminApp() {
   const [currentTab, setCurrentTab] = useState('users');
 
   useEffect(() => {
-    // Check if admin is already logged in
-    const token = localStorage.getItem('spendsense_admin_token');
-    if (token) {
-      setIsAdminLoggedIn(true);
-    }
+    const checkAdminUrlSecurity = () => {
+      const path = window.location.pathname;
+      // Valid path for admin area is strictly '/admin' or '/admin/'
+      if (path !== '/admin' && path !== '/admin/') {
+        console.warn("Security Alert: Invalid Admin URL path accessed. Redirecting to Landing Page.");
+        localStorage.removeItem('spendsense_admin_token');
+        localStorage.removeItem('spendsense_auth_token');
+        localStorage.removeItem('spendsense_refresh_token');
+        localStorage.removeItem('spendsense_token');
+        window.location.href = '/';
+        return;
+      }
+
+      // Check if admin is already logged in
+      const token = localStorage.getItem('spendsense_admin_token');
+      if (token) {
+        setIsAdminLoggedIn(true);
+      }
+    };
+
+    checkAdminUrlSecurity();
+
+    window.addEventListener('popstate', checkAdminUrlSecurity);
+    window.addEventListener('hashchange', checkAdminUrlSecurity);
+
+    return () => {
+      window.removeEventListener('popstate', checkAdminUrlSecurity);
+      window.removeEventListener('hashchange', checkAdminUrlSecurity);
+    };
   }, []);
 
   const handleLogout = () => {

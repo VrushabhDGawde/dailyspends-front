@@ -11,7 +11,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { LandingPage } from './pages/LandingPage';
 import { ResolutionPage } from './pages/ResolutionPage';
 import { useAuth } from './contexts/AuthContext';
-import { fetchTransactions } from './services/api';
+import { fetchTransactions, isUnverifiedSms } from './services/api';
+import { OnboardingProfileModal } from './components/OnboardingProfileModal';
 
 function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -20,9 +21,59 @@ function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [txFilterState, setTxFilterState] = useState<{fromDate?: string, toDate?: string} | null>(null);
   
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout, refreshProfile } = useAuth();
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+
+  // Mandatory Profile Onboarding Guard:
+  // If user is authenticated (and not demo), check if profile is complete.
+  // If incomplete, force open the mandatory onboarding window.
+  useEffect(() => {
+    if (isAuthenticated && !isDemoMode) {
+      if (user && user.isProfileComplete === false) {
+        setIsOnboardingOpen(true);
+      } else {
+        setIsOnboardingOpen(false);
+      }
+    } else {
+      setIsOnboardingOpen(false);
+    }
+  }, [isAuthenticated, isDemoMode, user]);
+
+  const handleProfileComplete = async () => {
+    setIsOnboardingOpen(false);
+    await refreshProfile();
+  };
   
+  // URL Tampering & Invalid Route Security Guard:
+  // If user edits or tampers with the URL to access invalid routes/endpoints,
+  // clear sessions, logout, and redirect to the landing page.
+  useEffect(() => {
+    const checkUrlSecurity = () => {
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/' && currentPath !== '') {
+        console.warn("Security Alert: Unauthorized URL path accessed. Clearing session and redirecting.");
+        localStorage.removeItem('spendsense_auth_token');
+        localStorage.removeItem('spendsense_refresh_token');
+        localStorage.removeItem('spendsense_token');
+        localStorage.removeItem('spendsense_admin_token');
+        logout();
+        setIsDemoMode(false);
+        window.history.replaceState(null, '', '/');
+      }
+    };
+
+    checkUrlSecurity();
+
+    window.addEventListener('popstate', checkUrlSecurity);
+    window.addEventListener('hashchange', checkUrlSecurity);
+
+    return () => {
+      window.removeEventListener('popstate', checkUrlSecurity);
+      window.removeEventListener('hashchange', checkUrlSecurity);
+    };
+  }, [logout]);
+
   // Auto-exit demo mode when user logs in
   useEffect(() => {
     if (isAuthenticated) setIsDemoMode(false);
@@ -37,12 +88,7 @@ function App() {
       try {
         const data = await fetchTransactions();
         const todayStr = new Date().toISOString().split('T')[0];
-        const unverified = data.filter(t => 
-          !t.isReviewed && 
-          t.transactionType === 'DEBIT' &&
-          t.sender !== 'MANUAL' &&
-          t.receivedAt && t.receivedAt.startsWith(todayStr)
-        ).length;
+        const unverified = data.filter(t => isUnverifiedSms(t, todayStr)).length;
         setUnverifiedCount(unverified);
       } catch (error) {
         console.error("Failed to fetch global unverified count:", error);
@@ -113,6 +159,7 @@ function App() {
         />
         <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
+        <OnboardingProfileModal isOpen={isOnboardingOpen} onComplete={handleProfileComplete} onClose={() => setIsOnboardingOpen(false)} />
         
         <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
           <ErrorBoundary>
@@ -131,7 +178,9 @@ function App() {
                 onFilterConsumed={() => setTxFilterState(null)} 
               />
             )}
-            {currentPage === 'resolution' && <ResolutionPage />}
+            {currentPage === 'resolution' && (
+              <ResolutionPage onCountChange={(count) => setUnverifiedCount(count)} />
+            )}
             {currentPage === 'insights' && <InsightsPage />}
             {currentPage === 'settings' && (
               <SettingsPage 
