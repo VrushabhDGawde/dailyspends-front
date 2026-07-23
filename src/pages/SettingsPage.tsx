@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Palette, Shield, Download, Trash2, Camera, Moon, Sun, Monitor, PlaySquare, HelpCircle } from 'lucide-react';
+import { User, Palette, Shield, Download, Trash2, Camera, Moon, Sun, Monitor, PlaySquare, HelpCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { updateUserProfile } from '../services/userApi';
 
 interface SettingsPageProps {
   isDark: boolean;
@@ -11,16 +13,49 @@ interface SettingsPageProps {
 }
 
 export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, onOpenSupport }: SettingsPageProps) {
+  const { user, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'data'>('profile');
 
-  // Mock Profile State
-  const [name, setName] = useState('Guest User');
-  const [email, setEmail] = useState('guest@example.com');
+  // Profile State
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [salary, setSalary] = useState(user?.salary != null ? String(user.salary) : '');
+  const [savingsPercentage, setSavingsPercentage] = useState(user?.savingsPercentage || 0);
   const [currency, setCurrency] = useState('INR (₹)');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync state if user context updates after mount
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setSalary(user.salary != null ? String(user.salary) : '');
+      setSavingsPercentage(user?.savingsPercentage || 0);
+    }
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    try {
+      const parsedSalary = salary.trim() !== '' ? parseFloat(salary) : undefined;
+      await updateUserProfile({
+        fullName: name,
+        salary: parsedSalary,
+        savingsPercentage: savingsPercentage
+      });
+      await refreshProfile();
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error("Failed to update profile", error);
+      alert("Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8">
 
         <header>
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, type: 'spring' }}>
@@ -67,52 +102,104 @@ export function SettingsPage({ isDark, toggleTheme, reduceMotion, toggleMotion, 
             {/* PROFILE TAB */}
             {activeTab === 'profile' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <h2 className="text-xl font-semibold mb-6">Profile Settings</h2>
+                <h2 className="text-2xl font-bold mb-6">Profile Settings</h2>
 
-                <div className="flex items-center gap-6 mb-8">
+                <div className="flex items-center gap-6 mb-10 p-6 bg-white/30 dark:bg-black/10 rounded-3xl border border-white/20 dark:border-white/5">
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-100 to-purple-200 dark:from-indigo-900 dark:to-purple-900 border-4 border-white dark:border-zinc-800 flex items-center justify-center overflow-hidden">
-                      <User className="w-10 h-10 text-indigo-700 dark:text-indigo-300" />
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 border-4 border-background flex items-center justify-center overflow-hidden shadow-xl">
+                      <User className="w-10 h-10 text-white" />
                     </div>
                     <button className="absolute bottom-0 right-0 p-2 bg-foreground text-background rounded-full shadow-lg hover:scale-105 transition-transform">
                       <Camera className="w-4 h-4" />
                     </button>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{name}</h3>
-                    <p className="text-muted-foreground text-sm">Personal Account</p>
+                    <h3 className="text-xl font-bold">{name}</h3>
+                    <p className="text-muted-foreground text-sm font-medium">Personal Account</p>
                   </div>
                 </div>
 
-                <div className="space-y-5 max-w-md">
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1.5 ml-1">Full Name</label>
-                    <input
-                      type="text" value={name} onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Left Column: Personal Info */}
+                  <div className="space-y-5">
+                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Personal Details</h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Full Name</label>
+                      <input
+                        type="text" value={name} onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Email Address</label>
+                      <input
+                        type="email" value={email} disabled
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm opacity-50 cursor-not-allowed font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Default Currency</label>
+                      <select
+                        value={currency} onChange={(e) => setCurrency(e.target.value)}
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none cursor-pointer font-medium"
+                      >
+                        <option>INR (₹)</option>
+                        <option>USD ($)</option>
+                        <option>EUR (€)</option>
+                        <option>GBP (£)</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1.5 ml-1">Email Address</label>
-                    <input
-                      type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
-                    />
+
+                  {/* Right Column: Financial Goals */}
+                  <div className="space-y-5">
+                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Financial Goals</h3>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5 ml-1">Monthly Salary (₹)</label>
+                      <input
+                        type="number" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder="e.g. 50000"
+                        className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium"
+                      />
+                    </div>
+                    
+                    <div className="pt-2">
+                      <div className="flex justify-between items-end mb-2">
+                        <label className="block text-xs font-semibold text-muted-foreground ml-1">Savings Goal (%)</label>
+                        <span className="text-lg font-black text-primary">{savingsPercentage}%</span>
+                      </div>
+                      <input
+                        type="range" min="0" max="100" step="1"
+                        value={savingsPercentage} onChange={(e) => setSavingsPercentage(Number(e.target.value))}
+                        className="w-full h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                      
+                      {/* Live Preview */}
+                      <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-3">Live Projection</h4>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium">Monthly Savings</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            ₹{salary ? Math.round((Number(salary) * savingsPercentage) / 100).toLocaleString('en-IN') : 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-primary/10">
+                          <span className="text-sm font-medium">Usable Budget</span>
+                          <span className="font-bold text-foreground">
+                            ₹{salary ? Math.round(Number(salary) - (Number(salary) * savingsPercentage) / 100).toLocaleString('en-IN') : 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1.5 ml-1">Default Currency</label>
-                    <select
-                      value={currency} onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-white/50 dark:bg-black/20 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all appearance-none cursor-pointer"
-                    >
-                      <option>INR (₹)</option>
-                      <option>USD ($)</option>
-                      <option>EUR (€)</option>
-                      <option>GBP (£)</option>
-                    </select>
-                  </div>
-                  <button className="mt-4 bg-foreground text-background px-6 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]">
-                    Save Changes
+                </div>
+
+                <div className="mt-10 flex justify-end">
+                  <button 
+                    onClick={handleSaveProfile} 
+                    disabled={isSaving}
+                    className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center min-w-[160px]"
+                  >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
                   </button>
                 </div>
               </motion.div>

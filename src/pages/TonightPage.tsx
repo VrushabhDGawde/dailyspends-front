@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { TransactionReviewModal } from '../components/TransactionReviewModal';
 import { UserResolutionCenter } from '../components/UserResolutionCenter';
+import { useAuth } from '../contexts/AuthContext';
 
 const CATEGORIES = [
   'Food & Dining',
@@ -78,11 +79,12 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
   // Track category overrides
   const [categoryOverrides, setCategoryOverrides] = useState<Record<number, string>>({});
 
+  const { user } = useAuth();
+  
   // Settings
-  const [monthlyBudget] = useState(() => {
-    const saved = localStorage.getItem('monthlyBudget');
-    return saved ? Number(saved) : 30000;
-  });
+  const monthlySalary = user?.salary || Number(localStorage.getItem('monthlyBudget')) || 30000;
+  const savingsPercentage = user?.savingsPercentage || Number(localStorage.getItem('savingsPercentage')) || 0;
+  const effectiveBudget = monthlySalary - (monthlySalary * (savingsPercentage / 100));
 
   // Quick Add Form State
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -99,7 +101,6 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-
 
   const loadData = async () => {
     setLoading(true);
@@ -172,8 +173,6 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     return daySummaries.reduce((sum, d) => sum + d.totalSpent, 0);
   }, [daySummaries]);
 
-
-
   const calendarGrid = useMemo(() => {
     const [yearStr, monthStr] = selectedMonth.split('-');
     const year = Number(yearStr);
@@ -244,7 +243,7 @@ export function TonightPage({ onNavigateToTransactions, onNavigateToResolution }
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   }, []);
-  const dailyLimit = Math.round(monthlyBudget / daysInMonth);
+  const dailyLimit = Math.round(effectiveBudget / daysInMonth);
   const progressPercent = Math.round((totalSpent / dailyLimit) * 100);
 
   // SVG Gauge metrics

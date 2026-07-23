@@ -38,8 +38,8 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSettings = async () => {
     try {
-      const token = localStorage.getItem('spendsense_auth_token') || localStorage.getItem('spendsense_token');
-      if (!token) {
+      const adminToken = localStorage.getItem('spendsense_admin_token');
+      if (!adminToken) {
         applySettings({ websiteTitle: 'DailySpends', themeMode: 'dark', primaryColor: '#ef4444' });
         return;
       }
@@ -48,8 +48,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
       setSettings(data);
       applySettings(data);
     } catch (error) {
-      console.warn('Failed to load platform settings', error);
-      // Fallback
+      // Fallback silently without throwing errors for non-admins
       applySettings({ websiteTitle: 'DailySpends', themeMode: 'dark', primaryColor: '#ef4444' });
     }
   };

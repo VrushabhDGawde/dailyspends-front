@@ -34,7 +34,7 @@ export function UserResolutionCenter({ unverifiedTransactions, onResolve, onAppr
   // Pre-fill form when a new item is selected
   useEffect(() => {
     if (selectedItem) {
-      setAmount(selectedItem.amount?.toString() || '');
+      setAmount(selectedItem.amount != null ? String(selectedItem.amount) : '');
       setMerchant(selectedItem.merchantClean || selectedItem.merchantRaw || '');
       setCategory(selectedItem.category || 'Other');
       setTxType(selectedItem.transactionType || 'DEBIT');

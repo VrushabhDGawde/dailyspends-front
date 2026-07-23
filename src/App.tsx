@@ -3,6 +3,7 @@ import { MotionConfig } from 'framer-motion';
 import { Sidebar } from './components/Navbar'; 
 import { AuthModal } from './components/AuthModal';
 import { SupportModal } from './components/SupportModal';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { TonightPage } from './pages/TonightPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { InsightsPage } from './pages/InsightsPage';
@@ -114,30 +115,32 @@ function App() {
         <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
         
         <main className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
-          {currentPage === 'tonight' && (
-            <TonightPage 
-              onNavigateToTransactions={(filter) => {
-                setTxFilterState(filter);
-                setCurrentPage('transactions');
-              }} 
-              onNavigateToResolution={() => setCurrentPage('resolution')}
-            />
-          )}
-          {currentPage === 'transactions' && (
-            <TransactionsPage 
-              initialFilter={txFilterState} 
-              onFilterConsumed={() => setTxFilterState(null)} 
-            />
-          )}
-          {currentPage === 'resolution' && <ResolutionPage />}
-          {currentPage === 'insights' && <InsightsPage />}
-          {currentPage === 'settings' && (
-            <SettingsPage 
-              isDark={isDark} toggleTheme={toggleTheme}
-              reduceMotion={reduceMotion} toggleMotion={toggleMotion}
-              onOpenSupport={() => setIsSupportModalOpen(true)}
-            />
-          )}
+          <ErrorBoundary>
+            {currentPage === 'tonight' && (
+              <TonightPage 
+                onNavigateToTransactions={(filter) => {
+                  setTxFilterState(filter);
+                  setCurrentPage('transactions');
+                }} 
+                onNavigateToResolution={() => setCurrentPage('resolution')}
+              />
+            )}
+            {currentPage === 'transactions' && (
+              <TransactionsPage 
+                initialFilter={txFilterState} 
+                onFilterConsumed={() => setTxFilterState(null)} 
+              />
+            )}
+            {currentPage === 'resolution' && <ResolutionPage />}
+            {currentPage === 'insights' && <InsightsPage />}
+            {currentPage === 'settings' && (
+              <SettingsPage 
+                isDark={isDark} toggleTheme={toggleTheme}
+                reduceMotion={reduceMotion} toggleMotion={toggleMotion}
+                onOpenSupport={() => setIsSupportModalOpen(true)}
+              />
+            )}
+          </ErrorBoundary>
         </main>
       </div>
     </MotionConfig>

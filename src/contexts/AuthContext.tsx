@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getUserProfile } from '../services/userApi';
 
 export interface User {
   email: string;
   name?: string;
+  salary?: number;
+  savingsPercentage?: number;
 }
 
 interface AuthContextType {
@@ -10,7 +13,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (token: string, refreshToken?: string) => void;
-  logout: () => void;
+  logout: (showSessionExpiredAlert?: boolean) => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,17 +38,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    // Check localStorage for token on mount
-    const storedToken = localStorage.getItem('spendsense_auth_token');
-    if (storedToken) {
-      setToken(storedToken);
-      const decoded = parseJwt(storedToken);
-      if (decoded && decoded.sub) {
-        setUser({ email: decoded.sub, name: decoded.name });
-      }
+  const refreshProfile = async () => {
+    try {
+      const profile = await getUserProfile();
+      setUser(prev => prev ? { ...prev, name: profile.fullName, salary: profile.salary, savingsPercentage: profile.savingsPercentage } : { email: profile.email, name: profile.fullName, salary: profile.salary, savingsPercentage: profile.savingsPercentage });
+    } catch (error) {
+      console.warn("Failed to fetch user profile", error);
     }
-    setIsInitialized(true);
+  };
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('spendsense_auth_token');
+      if (storedToken) {
+        const decoded = parseJwt(storedToken);
+        
+        // Check if token is expired
+        if (decoded && decoded.exp) {
+          const currentTime = Date.now() / 1000;
+          if (decoded.exp < currentTime) {
+            // Token is expired, clear storage and do not authenticate
+            localStorage.removeItem('spendsense_auth_token');
+            localStorage.removeItem('spendsense_refresh_token');
+            localStorage.removeItem('spendsense_token');
+            // We don't alert here on reload to prevent annoying popups, just silently logout
+          } else {
+            setToken(storedToken);
+            if (decoded.sub) {
+              setUser({ email: decoded.sub, name: decoded.name });
+            }
+          }
+        } else if (decoded) {
+          // No expiry, just restore
+          setToken(storedToken);
+          if (decoded.sub) {
+            setUser({ email: decoded.sub, name: decoded.name });
+          }
+        }
+      }
+
+      // Always load profile data (from backend or local storage fallback)
+      await refreshProfile();
+      setIsInitialized(true);
+    };
+    
+    initializeAuth();
     
     // Listen for automatic logouts triggered by the apiClient
     const handleLogout = () => logout();
@@ -55,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = (newToken: string, newRefreshToken?: string) => {
+  const login = async (newToken: string, newRefreshToken?: string) => {
     setToken(newToken);
     localStorage.setItem('spendsense_auth_token', newToken);
     if (newRefreshToken) {
@@ -64,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const decoded = parseJwt(newToken);
     if (decoded && decoded.sub) {
       setUser({ email: decoded.sub, name: decoded.name });
+      await refreshProfile();
     }
   };
 
@@ -72,13 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     localStorage.removeItem('spendsense_auth_token');
     localStorage.removeItem('spendsense_refresh_token');
-    localStorage.removeItem('spendsense_token'); // Clear legacy tokens if any
+    localStorage.removeItem('spendsense_token');
   };
 
   if (!isInitialized) return null; // Avoid flashing unauthenticated state
 
   return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated: !!token, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

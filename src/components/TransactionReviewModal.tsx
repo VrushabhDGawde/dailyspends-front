@@ -23,7 +23,7 @@ export function TransactionReviewModal({ isOpen, onClose, transaction, onSave }:
 
   useEffect(() => {
     if (transaction) {
-      setAmount(transaction.amount?.toString() || '');
+      setAmount(transaction.amount != null ? String(transaction.amount) : '');
       setMerchant(transaction.merchantClean || transaction.merchantRaw || '');
       setCategory(transaction.category || 'Other');
       setTxType(transaction.transactionType || 'DEBIT');

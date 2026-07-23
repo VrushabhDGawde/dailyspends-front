@@ -149,7 +149,7 @@ export function Sidebar({ onOpenAuth, currentPage, onNavigate, isCollapsed, onTo
                 <div className="text-left flex-1 min-w-0 pr-2">
                   <p className="text-sm font-semibold truncate">{user?.name || user?.email?.split('@')[0]}</p>
                   <button 
-                    onClick={logout}
+                    onClick={() => logout()}
                     className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition-colors mt-0.5"
                   >
                     <LogOut className="w-3 h-3" /> Sign Out
